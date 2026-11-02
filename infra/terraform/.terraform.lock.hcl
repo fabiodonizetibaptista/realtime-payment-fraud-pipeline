@@ -5,6 +5,7 @@ provider "registry.terraform.io/aiven/aiven" {
   version     = "4.65.0"
   constraints = "~> 4.61"
   hashes = [
+    "h1:pI5UlXIQQ0TZARs3nTuyCmD2SVLYy7tj0r/HPQR9PlQ=",
     "h1:si8eKbNbBhWXef6ttMSw0/mMHXUigKfSONABb8B2mVQ=",
     "zh:00e5e1786d1a971f5caa0d204180cb1da76801a910a9723cb257b34b638cdb6d",
     "zh:242b1b8ba36a27480fdaa942a986b6600a05ffa12092d9beb89ca33e12d76880",
@@ -27,6 +28,7 @@ provider "registry.terraform.io/confluentinc/confluent" {
   constraints = "~> 2.86"
   hashes = [
     "h1:KgUf74SwzPikBdea44Ps+EP2Y2Wz5rn08jWOUOXhSdk=",
+    "h1:NvioJpWIhV+77H0xfFSsLb6z22jGMG6P25tB3v4OlRA=",
     "zh:0bd70bd4e05be90c3ef710c8b942e6e2623636209ae86911a12c0ed89b7adfb9",
     "zh:127a3f48ccd4d26cf460a0550fdf86ffff7e284e39b1c25dddc117d2afdc7edb",
     "zh:2a922ffe0cab1278b67bc03174163546784ff8aa1304d031d687476028c019cc",
