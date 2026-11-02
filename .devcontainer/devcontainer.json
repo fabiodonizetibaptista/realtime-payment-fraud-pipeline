@@ -1,0 +1,6 @@
+{
+  "name": "Realtime Payment Fraud Pipeline",
+  "image": "mcr.microsoft.com/devcontainers/python:3.3.2-3.12-bookworm",
+  "remoteUser": "vscode",
+  "postCreateCommand": "python .devcontainer/install_tools.py"
+}
