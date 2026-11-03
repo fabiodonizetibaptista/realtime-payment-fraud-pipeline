@@ -1,0 +1,877 @@
+diff --git a/.env.example b/.env.example
+index 000c8ab..49ae3ef 100644
+--- a/.env.example
++++ b/.env.example
+@@ -1,12 +1,27 @@
+-# Opcional: copie para .env e preencha somente as credenciais necessarias.
+-# No Codespaces, prefira Codespaces Secrets com estes mesmos nomes.
+-# Valores existentes no ambiente sempre prevalecem sobre este arquivo.
+-# IDs, endpoints, hosts e nomes de recursos serao obtidos dos outputs Terraform.
+-
++# Credenciais administrativas da conta Confluent: manter em Codespaces Secrets.
+ AIVEN_TOKEN=
++# Nao preencher nem imprimir os valores neste arquivo.
+ CONFLUENT_CLOUD_API_KEY=
+ CONFLUENT_CLOUD_API_SECRET=
+-KAFKA_API_KEY=
+-KAFKA_API_SECRET=
+-SCHEMA_REGISTRY_API_KEY=
+-SCHEMA_REGISTRY_API_SECRET=
++
++# Geradas pelo Terraform apos o primeiro apply e exportadas para .env local.
++# Os nomes TF_VAR_foundation_* evitam colisao com credenciais antigas da V1.
++TF_VAR_foundation_environment_id=
++KAFKA_BOOTSTRAP_ENDPOINT=
++TF_VAR_foundation_kafka_id=
++TF_VAR_foundation_kafka_rest_endpoint=
++TF_VAR_foundation_kafka_api_key=
++TF_VAR_foundation_kafka_api_secret=
++TF_VAR_foundation_schema_registry_id=
++TF_VAR_foundation_schema_registry_rest_endpoint=
++TF_VAR_foundation_schema_registry_api_key=
++TF_VAR_foundation_schema_registry_api_secret=
++
++# Credenciais de runtime para os clientes do desafio.
++PRODUCER_KAFKA_API_KEY=
++PRODUCER_KAFKA_API_SECRET=
++CONSUMER_KAFKA_API_KEY=
++CONSUMER_KAFKA_API_SECRET=
++
++# O exporter habilita as ACLs somente depois de disponibilizar a chave admin.
++TF_VAR_enable_kafka_acls=false
+diff --git a/README.md b/README.md
+index 536e1d7..b6b19e9 100644
+--- a/README.md
++++ b/README.md
+@@ -18,15 +18,12 @@ O instalador fixa versoes conhecidas para tornar o Codespace reproduzivel; `lab.
+ 
+ ## Credenciais
+ 
+-O `.env` e opcional. A forma recomendada no Codespaces e cadastrar os segredos em **GitHub > Settings > Codespaces > Codespaces secrets**, concedendo acesso ao repositorio que o usuario criar. Consulte [a documentacao oficial sobre segredos de conta](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces). Os nomes devem corresponder exatamente aos campos de `.env.example`:
++O `.env` e opcional. A forma recomendada no Codespaces e cadastrar os segredos em **GitHub > Settings > Codespaces > Codespaces secrets**, concedendo acesso ao repositorio que o usuario criar. Consulte [a documentacao oficial sobre segredos de conta](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces). Os segredos necessários nesta etapa são:
+ 
+-- `AIVEN_TOKEN`
+ - `CONFLUENT_CLOUD_API_KEY`
+ - `CONFLUENT_CLOUD_API_SECRET`
+-- `KAFKA_API_KEY`
+-- `KAFKA_API_SECRET`
+-- `SCHEMA_REGISTRY_API_KEY`
+-- `SCHEMA_REGISTRY_API_SECRET`
++
++Eles devem vir de Codespaces Secrets. `AIVEN_TOKEN` será necessário quando o bloco Aiven for introduzido. As credenciais Kafka e Schema Registry da V2 serão geradas pelo Terraform e exportadas para `.env` pelo script `scripts/export_foundation_env.py`; não reutilize valores da V1.
+ 
+ Se preferir, pode criar `.env` localmente a partir de `.env.example`; ele e ignorado pelo Git. Valores vazios do `.env` sao ignorados. Valores ja existentes no ambiente (incluindo Codespaces Secrets) nunca sao substituidos pelo arquivo. O bootstrap nao exige credenciais reais.
+ 
+@@ -40,7 +37,7 @@ Na raiz do repositorio:
+ python lab.py setup
+ ```
+ 
+-O comando confere as versoes, executa `terraform init -backend=false -lockfile=readonly`, `terraform validate` e verifica os comandos `--help` da Confluent CLI. Nao faz login, nao executa plan/apply e nao consulta nem altera recursos na nuvem.
++O comando confere as versoes, executa `terraform init -lockfile=readonly`, `terraform validate` e verifica os comandos `--help` da Confluent CLI. O backend local e inicializado para permitir State e planos nos marcos seguintes. Nao faz login, nao executa plan/apply e nao consulta nem altera recursos na nuvem.
+ 
+ Testes sem credenciais reais:
+ 
+@@ -54,13 +51,13 @@ Verificacao isolada da CLI:
+ python lab.py check-cli
+ ```
+ 
+-No Marco 1, `python lab.py teardown` apenas confirma que ainda nao ha recursos declarados para destruir. O teardown remoto sera implementado junto com os recursos, usando `try/finally`, plano/allow-list e verificacao por listagem remota.
++No Marco 1, antes da declaracao de recursos, `python lab.py teardown` apenas confirmava que nao havia recursos. A partir do Marco 4, o comando bloqueia a operacao enquanto o fluxo remoto de teardown com plano, allow-list separada e verificacao remota nao estiver implementado.
+ 
+ ## State e ciclo de vida
+ 
+ O State Terraform sera local no Codespace, no diretorio de trabalho Terraform, e nunca sera enviado ao Git. `.gitignore` exclui `.terraform/`, `*.tfstate`, `*.tfstate.*`, `*.tfvars` e arquivos de plano.
+ 
+-O fluxo de cada janela integrada sera `setup -> testes -> teardown` na mesma sessao do Codespace. O teardown sera garantido por `try/finally` e so sera considerado concluido depois de conferir por listagem remota os recursos criados, incluindo statements, conectores e topicos dinamicos de heartbeat.
++O fluxo esperado de cada janela integrada e `setup -> testes -> teardown` na mesma sessao do Codespace. No Marco 4, o wrapper remoto de apply/teardown ainda nao esta habilitado; nao executar apply antes de sua implementacao e da revisao explicita do plano. O teardown so sera considerado concluido depois de conferir por listagem remota os recursos criados, incluindo statements, conectores e topicos dinamicos de heartbeat.
+ 
+ **Nunca apague o Codespace antes de o teardown ser confirmado por verificacao remota.** Apagar o Codespace antes disso pode eliminar o State local necessario para administrar os recursos ainda existentes.
+ 
+@@ -109,4 +106,39 @@ Nao usar `confluent iam acl list`: o caminho correto para ACLs Kafka no Cloud e
+ 
+ ## Estado do Marco 1
+ 
+-Este marco prepara o Codespace, a automacao local e os testes. A infraestrutura ainda nao foi portada; por isso `setup` nao provisiona recursos e `teardown` nao destroi recursos. O State local e o ciclo completo de teardown remoto serao exercitados nos marcos de provisionamento, sempre na mesma sessao do Codespace.
++Registro historico do Marco 1: preparacao do Codespace, automacao local e testes. A infraestrutura foi introduzida posteriormente no Marco 4; por isso, as observacoes deste bloco descrevem apenas o estado original do Marco 1.
++
++
++## Marco 4 — Foundation Confluent
++
++A Foundation declara, sem reutilizar IDs da V1:
++
++- Environment `desafio-final` com Stream Governance Essentials.
++- Kafka Basic `desafio-basic` em AWS `us-east-1`, zona unica.
++- Identidades `desafio-iac-admin`, `desafio-producer`, `desafio-consumer` e `desafio-schema-registry`.
++- API Keys de cluster para o administrador, producer e consumer; API Key do Schema Registry.
++- `CloudClusterAdmin` restrito ao CRN do cluster para a identidade técnica de IaC.
++- `DeveloperRead` e `DeveloperWrite` restritos aos subjects do Schema Registry.
++- ACLs de producer/consumer para o prefixo `desafio-`, inicialmente desabilitadas.
++
++O Kafka Basic não recebe RBAC granular por tópico/grupo; essas permissões são ACLs. O papel `CloudClusterAdmin` é aplicado somente no escopo do cluster para administrar ACLs, sem conceder `EnvironmentAdmin`. No Schema Registry, `DeveloperRead` e `DeveloperWrite` são separados; evitamos `ResourceOwner`, que concederia poderes de gestão de acesso e criação de identidades desnecessários para o contrato de schemas.
++
++### Sequência local
++
++```text
++python lab.py setup
++python lab.py test
++python lab.py plan
++```
++
++O primeiro plano deixa `enable_kafka_acls=false`, pois a API Key do `desafio-iac-admin` ainda não foi exportada para o provider. O plano é apenas leitura; não cria recursos. **Não executar apply até revisar o plano, confirmar o custo do cluster e concluir o mecanismo controlado de apply/teardown.**
++
++Depois que a Foundation for aplicada em uma janela autorizada, exporte os outputs sem imprimi-los:
++
++```text
++python scripts/export_foundation_env.py
++```
++
++O script grava os endpoints e credenciais em `.env` (ignorado pelo Git, modo de arquivo 0600), preserva os valores já existentes e habilita as ACLs para o segundo plano. Os secrets nunca são enviados ao stdout. O provider usa `TF_VAR_foundation_*` para não confundir credenciais V2 com variáveis `KAFKA_API_KEY` antigas da V1.
++
++O State Terraform local contém secrets de API Key. `sensitive=true` oculta valores na CLI, mas não cifra o State. Manter o Codespace e o State protegidos até o teardown confirmado; nunca versionar State ou plan.
+diff --git a/infra/terraform/foundation.tf b/infra/terraform/foundation.tf
+new file mode 100644
+index 0000000..b4d76c2
+--- /dev/null
++++ b/infra/terraform/foundation.tf
+@@ -0,0 +1,172 @@
++# Marco 4 - Foundation do desafio DIO.
++# Os nomes e a regiao seguem o template de entrega do desafio.
++# Nenhum ID ou endpoint da V1 e reutilizado.
++
++resource "confluent_environment" "challenge" {
++  display_name = "desafio-final"
++
++  stream_governance {
++    package = "ESSENTIALS"
++  }
++}
++
++resource "confluent_kafka_cluster" "basic" {
++  display_name = "desafio-basic"
++  availability = "SINGLE_ZONE"
++  cloud        = "AWS"
++  region       = "us-east-1"
++
++  basic {}
++
++  environment {
++    id = confluent_environment.challenge.id
++  }
++}
++
++# O Schema Registry Essentials e associado ao Environment. A instanciacao
++# regional acontece com o primeiro cluster Kafka do Environment.
++data "confluent_schema_registry_cluster" "essentials" {
++  environment {
++    id = confluent_environment.challenge.id
++  }
++
++  depends_on = [confluent_kafka_cluster.basic]
++}
++
++# Identidade administrativa usada exclusivamente para administrar ACLs Kafka.
++# CloudClusterAdmin fica restrito ao cluster, sem conceder EnvironmentAdmin.
++resource "confluent_service_account" "iac_admin" {
++  display_name = "desafio-iac-admin"
++  description  = "Identidade tecnica para administrar ACLs do cluster do desafio"
++}
++
++resource "confluent_role_binding" "iac_admin_cluster_admin" {
++  principal   = "User:${confluent_service_account.iac_admin.id}"
++  role_name   = "CloudClusterAdmin"
++  crn_pattern = confluent_kafka_cluster.basic.rbac_crn
++}
++
++# Identidades de aplicacao separadas, conforme o contrato da entrega.
++resource "confluent_service_account" "producer" {
++  display_name = "desafio-producer"
++  description  = "Identidade de producer para topicos com prefixo desafio-"
++}
++
++resource "confluent_service_account" "consumer" {
++  display_name = "desafio-consumer"
++  description  = "Identidade de consumer para topicos e grupos com prefixo desafio-"
++}
++
++resource "confluent_service_account" "schema_registry" {
++  display_name = "desafio-schema-registry"
++  description  = "Identidade dedicada a publicacao e gestao dos schemas do desafio"
++}
++
++# A chave administrativa e de cluster (Kafka), nao Cloud API.
++# A identidade recebe CloudClusterAdmin antes da criacao da chave.
++resource "confluent_api_key" "iac_admin_kafka" {
++  display_name = "desafio-iac-admin-kafka"
++  description  = "Kafka API Key usada pelo Terraform para administrar ACLs"
++
++  owner {
++    id          = confluent_service_account.iac_admin.id
++    api_version = confluent_service_account.iac_admin.api_version
++    kind        = confluent_service_account.iac_admin.kind
++  }
++
++  managed_resource {
++    id          = confluent_kafka_cluster.basic.id
++    api_version = confluent_kafka_cluster.basic.api_version
++    kind        = confluent_kafka_cluster.basic.kind
++
++    environment {
++      id = confluent_environment.challenge.id
++    }
++  }
++
++  depends_on = [confluent_role_binding.iac_admin_cluster_admin]
++}
++
++resource "confluent_api_key" "producer_kafka" {
++  display_name = "desafio-producer-kafka"
++  description  = "Kafka API Key owned by desafio-producer"
++
++  owner {
++    id          = confluent_service_account.producer.id
++    api_version = confluent_service_account.producer.api_version
++    kind        = confluent_service_account.producer.kind
++  }
++
++  managed_resource {
++    id          = confluent_kafka_cluster.basic.id
++    api_version = confluent_kafka_cluster.basic.api_version
++    kind        = confluent_kafka_cluster.basic.kind
++
++    environment {
++      id = confluent_environment.challenge.id
++    }
++  }
++}
++
++resource "confluent_api_key" "consumer_kafka" {
++  display_name = "desafio-consumer-kafka"
++  description  = "Kafka API Key owned by desafio-consumer"
++
++  owner {
++    id          = confluent_service_account.consumer.id
++    api_version = confluent_service_account.consumer.api_version
++    kind        = confluent_service_account.consumer.kind
++  }
++
++  managed_resource {
++    id          = confluent_kafka_cluster.basic.id
++    api_version = confluent_kafka_cluster.basic.api_version
++    kind        = confluent_kafka_cluster.basic.kind
++
++    environment {
++      id = confluent_environment.challenge.id
++    }
++  }
++}
++
++# Schema Registry usa RBAC por subject, mesmo com Kafka Basic.
++# Read e Write sao separados para evitar ResourceOwner, que tambem permite
++# gerenciar permissoes e criar identidades. O desafio precisa registrar, ler
++# e validar schemas, nao administrar acessos ou excluir subjects.
++resource "confluent_role_binding" "schema_registry_subject_read" {
++  principal   = "User:${confluent_service_account.schema_registry.id}"
++  role_name   = "DeveloperRead"
++  crn_pattern = "${data.confluent_schema_registry_cluster.essentials.resource_name}/subject=*"
++}
++
++resource "confluent_role_binding" "schema_registry_subject_write" {
++  principal   = "User:${confluent_service_account.schema_registry.id}"
++  role_name   = "DeveloperWrite"
++  crn_pattern = "${data.confluent_schema_registry_cluster.essentials.resource_name}/subject=*"
++}
++
++resource "confluent_api_key" "schema_registry" {
++  display_name = "desafio-schema-registry"
++  description  = "Schema Registry API Key owned by desafio-schema-registry"
++
++  owner {
++    id          = confluent_service_account.schema_registry.id
++    api_version = confluent_service_account.schema_registry.api_version
++    kind        = confluent_service_account.schema_registry.kind
++  }
++
++  managed_resource {
++    id          = data.confluent_schema_registry_cluster.essentials.id
++    api_version = data.confluent_schema_registry_cluster.essentials.api_version
++    kind        = data.confluent_schema_registry_cluster.essentials.kind
++
++    environment {
++      id = confluent_environment.challenge.id
++    }
++  }
++
++  depends_on = [
++    confluent_role_binding.schema_registry_subject_read,
++    confluent_role_binding.schema_registry_subject_write,
++  ]
++}
+diff --git a/infra/terraform/kafka-acls.tf b/infra/terraform/kafka-acls.tf
+new file mode 100644
+index 0000000..739497d
+--- /dev/null
++++ b/infra/terraform/kafka-acls.tf
+@@ -0,0 +1,41 @@
++# Kafka Basic utiliza ACLs para permissao em topicos e consumer groups.
++# A criacao fica desabilitada no primeiro apply: a API Key do iac_admin
++# precisa ser criada e exportada para KAFKA_API_KEY/KAFKA_API_SECRET antes.
++# O provider Confluent recebe KAFKA_ID, KAFKA_REST_ENDPOINT e credenciais
++# por variaveis de ambiente; nao colocar secrets em blocos credentials.
++
++resource "confluent_kafka_acl" "producer_topic_write" {
++  count = var.enable_kafka_acls ? 1 : 0
++
++  resource_type = "TOPIC"
++  resource_name = var.kafka_topic_prefix
++  pattern_type  = "PREFIXED"
++  principal     = "User:${confluent_service_account.producer.id}"
++  host          = "*"
++  operation     = "WRITE"
++  permission    = "ALLOW"
++}
++
++resource "confluent_kafka_acl" "consumer_topic_read" {
++  count = var.enable_kafka_acls ? 1 : 0
++
++  resource_type = "TOPIC"
++  resource_name = var.kafka_topic_prefix
++  pattern_type  = "PREFIXED"
++  principal     = "User:${confluent_service_account.consumer.id}"
++  host          = "*"
++  operation     = "READ"
++  permission    = "ALLOW"
++}
++
++resource "confluent_kafka_acl" "consumer_group_read" {
++  count = var.enable_kafka_acls ? 1 : 0
++
++  resource_type = "GROUP"
++  resource_name = var.kafka_topic_prefix
++  pattern_type  = "PREFIXED"
++  principal     = "User:${confluent_service_account.consumer.id}"
++  host          = "*"
++  operation     = "READ"
++  permission    = "ALLOW"
++}
+diff --git a/infra/terraform/outputs.tf b/infra/terraform/outputs.tf
+new file mode 100644
+index 0000000..334e460
+--- /dev/null
++++ b/infra/terraform/outputs.tf
+@@ -0,0 +1,84 @@
++# Metadados dinamicos para as etapas seguintes. Nenhum ID da V1 e fixado.
++output "environment_id" {
++  description = "ID do Environment criado para o desafio."
++  value       = confluent_environment.challenge.id
++}
++
++output "kafka_cluster_id" {
++  description = "ID do cluster Kafka Basic."
++  value       = confluent_kafka_cluster.basic.id
++}
++
++output "kafka_bootstrap_endpoint" {
++  description = "Bootstrap endpoint do cluster Kafka."
++  value       = confluent_kafka_cluster.basic.bootstrap_endpoint
++}
++
++output "kafka_rest_endpoint" {
++  description = "REST endpoint do cluster Kafka."
++  value       = confluent_kafka_cluster.basic.rest_endpoint
++}
++
++output "schema_registry_cluster_id" {
++  description = "ID do Schema Registry Essentials."
++  value       = data.confluent_schema_registry_cluster.essentials.id
++}
++
++output "schema_registry_rest_endpoint" {
++  description = "REST endpoint do Schema Registry Essentials."
++  value       = data.confluent_schema_registry_cluster.essentials.rest_endpoint
++}
++
++output "service_account_ids" {
++  description = "IDs publicos das identidades criadas na Foundation."
++  value = {
++    iac_admin       = confluent_service_account.iac_admin.id
++    producer        = confluent_service_account.producer.id
++    consumer        = confluent_service_account.consumer.id
++    schema_registry = confluent_service_account.schema_registry.id
++  }
++}
++
++output "kafka_admin_api_key_id" {
++  description = "ID da Kafka API Key administrativa."
++  value       = confluent_api_key.iac_admin_kafka.id
++}
++
++output "kafka_admin_api_key_secret" {
++  description = "Secret da Kafka API Key administrativa; nao imprimir no terminal."
++  value       = confluent_api_key.iac_admin_kafka.secret
++  sensitive   = true
++}
++
++output "producer_kafka_api_key_id" {
++  description = "ID da Kafka API Key do producer."
++  value       = confluent_api_key.producer_kafka.id
++}
++
++output "producer_kafka_api_key_secret" {
++  description = "Secret da Kafka API Key do producer; nao imprimir no terminal."
++  value       = confluent_api_key.producer_kafka.secret
++  sensitive   = true
++}
++
++output "consumer_kafka_api_key_id" {
++  description = "ID da Kafka API Key do consumer."
++  value       = confluent_api_key.consumer_kafka.id
++}
++
++output "consumer_kafka_api_key_secret" {
++  description = "Secret da Kafka API Key do consumer; nao imprimir no terminal."
++  value       = confluent_api_key.consumer_kafka.secret
++  sensitive   = true
++}
++
++output "schema_registry_api_key_id" {
++  description = "ID da API Key do Schema Registry."
++  value       = confluent_api_key.schema_registry.id
++}
++
++output "schema_registry_api_key_secret" {
++  description = "Secret da API Key do Schema Registry; nao imprimir no terminal."
++  value       = confluent_api_key.schema_registry.secret
++  sensitive   = true
++}
+diff --git a/infra/terraform/providers.tf b/infra/terraform/providers.tf
+index 841cc7a..1a3c4e0 100644
+--- a/infra/terraform/providers.tf
++++ b/infra/terraform/providers.tf
+@@ -1,4 +1,20 @@
+-# Os providers leem as credenciais das variaveis de ambiente carregadas do .env.
+-provider "aiven" {}
++# Cloud API credentials are read from CONFLUENT_CLOUD_API_KEY and
++# CONFLUENT_CLOUD_API_SECRET (Codespaces Secrets).
++# Kafka and Schema Registry data-plane credentials use dedicated TF_VAR_*
++# variables exported from this V2 Foundation, avoiding collisions with V1.
++provider "confluent" {
++  environment_id      = var.foundation_environment_id
++  kafka_id            = var.foundation_kafka_id
++  kafka_rest_endpoint = var.foundation_kafka_rest_endpoint
++  kafka_api_key       = var.foundation_kafka_api_key
++  kafka_api_secret    = var.foundation_kafka_api_secret
+ 
+-provider "confluent" {}
++  schema_registry_id          = var.foundation_schema_registry_id
++  schema_registry_rest_endpoint = var.foundation_schema_registry_rest_endpoint
++  schema_registry_api_key     = var.foundation_schema_registry_api_key
++  schema_registry_api_secret  = var.foundation_schema_registry_api_secret
++}
++
++# The Aiven provider is intentionally configured in the next infrastructure
++# block, when Aiven resources are introduced. The provider dependency remains
++# pinned in versions.tf and .terraform.lock.hcl.
+diff --git a/infra/terraform/variables.tf b/infra/terraform/variables.tf
+new file mode 100644
+index 0000000..456b8ca
+--- /dev/null
++++ b/infra/terraform/variables.tf
+@@ -0,0 +1,76 @@
++variable "enable_kafka_acls" {
++  description = "Habilita a criacao das ACLs depois que a API Key administrativa estiver exportada para o ambiente local."
++  type        = bool
++  default     = false
++}
++
++variable "kafka_topic_prefix" {
++  description = "Prefixo dos topicos autorizados para producer e consumer."
++  type        = string
++  default     = "desafio-"
++
++  validation {
++    condition     = length(trimspace(var.kafka_topic_prefix)) > 0
++    error_message = "kafka_topic_prefix nao pode ser vazio."
++  }
++}
++
++# Provider credentials for the V2 Foundation. These use TF_VAR_* names so
++# they cannot accidentally inherit older V1 KAFKA_API_KEY Codespaces secrets.
++variable "foundation_kafka_id" {
++  description = "Kafka cluster ID used by the Confluent provider for ACL operations."
++  type        = string
++  default     = ""
++}
++
++variable "foundation_kafka_rest_endpoint" {
++  description = "Kafka REST endpoint used by the Confluent provider for ACL operations."
++  type        = string
++  default     = ""
++}
++
++variable "foundation_kafka_api_key" {
++  description = "Kafka API Key owned by desafio-iac-admin."
++  type        = string
++  sensitive   = true
++  default     = ""
++}
++
++variable "foundation_kafka_api_secret" {
++  description = "Kafka API secret owned by desafio-iac-admin."
++  type        = string
++  sensitive   = true
++  default     = ""
++}
++
++variable "foundation_schema_registry_id" {
++  description = "Schema Registry cluster ID used by the Confluent provider."
++  type        = string
++  default     = ""
++}
++
++variable "foundation_schema_registry_rest_endpoint" {
++  description = "Schema Registry REST endpoint used by the Confluent provider."
++  type        = string
++  default     = ""
++}
++
++variable "foundation_schema_registry_api_key" {
++  description = "Schema Registry API Key owned by desafio-schema-registry."
++  type        = string
++  sensitive   = true
++  default     = ""
++}
++
++variable "foundation_schema_registry_api_secret" {
++  description = "Schema Registry API secret owned by desafio-schema-registry."
++  type        = string
++  sensitive   = true
++  default     = ""
++}
++
++variable "foundation_environment_id" {
++  description = "Environment ID gerado pela Foundation e usado por recursos Confluent das etapas seguintes."
++  type        = string
++  default     = ""
++}
+diff --git a/lab.py b/lab.py
+index f7bbf73..7a37a7e 100644
+--- a/lab.py
++++ b/lab.py
+@@ -79,18 +79,36 @@ def setup() -> None:
+     merge_env_file(ENV_FILE, os.environ)
+     secrets = secret_values(os.environ)
+     _check_versions()
+-    run_command(["terraform", "init", "-backend=false", "-lockfile=readonly"],
+-                cwd=TF_DIR, env=os.environ, secrets=secrets)
++    execution_env = dict(os.environ)
++    # Prevent inherited Terraform debug logging from exposing provider payloads.
++    execution_env["TF_LOG"] = "OFF"
++    run_command(["terraform", "init", "-lockfile=readonly"],
++                cwd=TF_DIR, env=execution_env, secrets=secrets)
+     result = run_command(["terraform", "validate", "-no-color"],
+-                         cwd=TF_DIR, env=os.environ, secrets=secrets)
++                         cwd=TF_DIR, env=execution_env, secrets=secrets)
+     check_cli_help()
+     if result.strip():
+         print(result.strip())
+     print("BOOTSTRAP_LOCAL_OK; nenhum recurso remoto foi consultado ou alterado.")
+ 
+ 
++def plan() -> None:
++    """Gera um plano local revisavel; nao cria nem altera recursos remotos."""
++    merge_env_file(ENV_FILE, os.environ)
++    execution_env = dict(os.environ)
++    execution_env["TF_LOG"] = "OFF"
++    secrets = secret_values(execution_env)
++    result = run_command(
++        ["terraform", "plan", "-no-color", "-out=foundation.tfplan"],
++        cwd=TF_DIR, env=execution_env, secrets=secrets,
++    )
++    if result.strip():
++        print(result.strip())
++    print("FOUNDATION_PLAN_READY=True; nenhum recurso remoto foi criado ou alterado.")
++
++
+ def teardown() -> None:
+-    """No Marco 1 ainda nao existem recursos Terraform para destruir."""
++    """Bloqueia teardown ate existir um fluxo remoto revisado e allow-listed."""
+     has_resources = any(
+         re.search(r'^\s*resource\s+"', path.read_text(encoding="utf-8"), re.MULTILINE)
+         for path in TF_DIR.glob("*.tf")
+@@ -104,6 +122,7 @@ def main(argv: Sequence[str] | None = None) -> int:
+     parser = argparse.ArgumentParser(description="Laboratorio de pagamentos em tempo real.")
+     commands = parser.add_subparsers(dest="command", required=True)
+     commands.add_parser("setup", help="prepara e valida o bootstrap local")
++    commands.add_parser("plan", help="gera um plano Terraform revisavel, sem apply")
+     commands.add_parser("teardown", help="encerra recursos gerenciados pelo Terraform")
+     commands.add_parser("check-cli", help="valida localmente os comandos Confluent CLI")
+     commands.add_parser("test", help="executa os testes sem credenciais")
+@@ -111,6 +130,8 @@ def main(argv: Sequence[str] | None = None) -> int:
+     try:
+         if args.command == "setup":
+             setup()
++        elif args.command == "plan":
++            plan()
+         elif args.command == "teardown":
+             teardown()
+         elif args.command == "check-cli":
+diff --git a/safety.py b/safety.py
+index 36397f6..a412013 100644
+--- a/safety.py
++++ b/safety.py
+@@ -15,6 +15,14 @@ SECRET_ENV_KEYS = (
+     "KAFKA_API_SECRET",
+     "SCHEMA_REGISTRY_API_KEY",
+     "SCHEMA_REGISTRY_API_SECRET",
++    "PRODUCER_KAFKA_API_KEY",
++    "PRODUCER_KAFKA_API_SECRET",
++    "CONSUMER_KAFKA_API_KEY",
++    "CONSUMER_KAFKA_API_SECRET",
++    "TF_VAR_foundation_kafka_api_key",
++    "TF_VAR_foundation_kafka_api_secret",
++    "TF_VAR_foundation_schema_registry_api_key",
++    "TF_VAR_foundation_schema_registry_api_secret",
+ )
+ 
+ 
+diff --git a/scripts/export_foundation_env.py b/scripts/export_foundation_env.py
+new file mode 100644
+index 0000000..169a9d5
+--- /dev/null
++++ b/scripts/export_foundation_env.py
+@@ -0,0 +1,97 @@
++"""Exporta credenciais Terraform para .env sem exibi-las no terminal."""
++
++import json
++import os
++import subprocess
++import sys
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++TF_DIR = ROOT / "infra" / "terraform"
++ENV_FILE = ROOT / ".env"
++
++OUTPUT_TO_ENV = {
++    "environment_id": "TF_VAR_foundation_environment_id",
++    "kafka_bootstrap_endpoint": "KAFKA_BOOTSTRAP_ENDPOINT",
++    "kafka_cluster_id": "TF_VAR_foundation_kafka_id",
++    "kafka_rest_endpoint": "TF_VAR_foundation_kafka_rest_endpoint",
++    "kafka_admin_api_key_id": "TF_VAR_foundation_kafka_api_key",
++    "kafka_admin_api_key_secret": "TF_VAR_foundation_kafka_api_secret",
++    "producer_kafka_api_key_id": "PRODUCER_KAFKA_API_KEY",
++    "producer_kafka_api_key_secret": "PRODUCER_KAFKA_API_SECRET",
++    "consumer_kafka_api_key_id": "CONSUMER_KAFKA_API_KEY",
++    "consumer_kafka_api_key_secret": "CONSUMER_KAFKA_API_SECRET",
++    "schema_registry_cluster_id": "TF_VAR_foundation_schema_registry_id",
++    "schema_registry_rest_endpoint": "TF_VAR_foundation_schema_registry_rest_endpoint",
++    "schema_registry_api_key_id": "TF_VAR_foundation_schema_registry_api_key",
++    "schema_registry_api_key_secret": "TF_VAR_foundation_schema_registry_api_secret",
++}
++
++
++def _read_existing_env() -> dict[str, str]:
++    from safety import load_env_file
++
++    return load_env_file(ENV_FILE)
++
++
++def _write_env_securely(values: dict[str, str]) -> None:
++    # API secrets are written only to the ignored local .env file.
++    # Atomic replace avoids leaving a partially written credential file.
++    temporary = ENV_FILE.with_name(".env.foundation.tmp")
++    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
++    os.chmod(temporary, 0o600)
++    try:
++        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
++            for key in sorted(values):
++                value = values[key]
++                if "\n" in value or "\r" in value:
++                    raise ValueError("Valor multilinha inesperado; arquivo nao foi publicado.")
++                stream.write(f"{key}={value}\n")
++        os.chmod(temporary, 0o600)
++        os.replace(temporary, ENV_FILE)
++        os.chmod(ENV_FILE, 0o600)
++    finally:
++        if temporary.exists():
++            temporary.unlink()
++
++
++def main() -> int:
++    try:
++        execution_env = dict(os.environ)
++        execution_env["TF_LOG"] = "OFF"
++        result = subprocess.run(
++            ["terraform", "output", "-json"],
++            cwd=TF_DIR,
++            env=execution_env,
++            text=True,
++            encoding="utf-8",
++            errors="replace",
++            capture_output=True,
++            check=False,
++        )
++        if result.returncode != 0:
++            raise RuntimeError("Terraform output indisponivel; confira se a Foundation foi aplicada.")
++
++        outputs = json.loads(result.stdout)
++        exported = _read_existing_env()
++        for output_name, env_name in OUTPUT_TO_ENV.items():
++            if output_name not in outputs:
++                raise RuntimeError(f"Output Terraform ausente: {output_name}.")
++            value = outputs[output_name].get("value")
++            if not isinstance(value, str) or not value:
++                raise RuntimeError(f"Output Terraform vazio ou invalido: {output_name}.")
++            exported[env_name] = value
++
++        # ACLs sao habilitadas apenas para a segunda etapa, depois da exportacao.
++        exported["TF_VAR_enable_kafka_acls"] = "true"
++        _write_env_securely(exported)
++        print(f"FOUNDATION_ENV_EXPORTED=True; VARIABLES={len(OUTPUT_TO_ENV) + 1}; FILE_MODE=600")
++        return 0
++    except (OSError, ValueError, RuntimeError, json.JSONDecodeError, KeyError):
++        # Nao imprimir stdout/stderr do Terraform: podem conter dados sensiveis.
++        print("ERRO: nao foi possivel exportar os outputs da Foundation com seguranca.", file=sys.stderr)
++        return 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/test_foundation_export.py b/tests/test_foundation_export.py
+new file mode 100644
+index 0000000..b9a7f38
+--- /dev/null
++++ b/tests/test_foundation_export.py
+@@ -0,0 +1,67 @@
++import io
++import json
++import os
++import stat
++import sys
++import tempfile
++import unittest
++from contextlib import redirect_stderr, redirect_stdout
++from pathlib import Path
++from types import SimpleNamespace
++from unittest.mock import patch
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / "scripts"))
++
++import export_foundation_env
++
++
++class FoundationExportTests(unittest.TestCase):
++    def test_exports_secrets_to_private_env_without_printing_them(self):
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            env_file = root / ".env"
++            env_file.write_text("AIVEN_TOKEN=preserve-this-token\n", encoding="utf-8")
++            export_foundation_env.ENV_FILE = env_file
++            export_foundation_env.TF_DIR = root / "infra" / "terraform"
++
++            values = {
++                output_name: f"safe-test-value-{index}"
++                for index, output_name in enumerate(export_foundation_env.OUTPUT_TO_ENV)
++            }
++            payload = {name: {"value": value, "sensitive": "secret" in name} for name, value in values.items()}
++            captured = io.StringIO()
++            with patch.object(
++                export_foundation_env.subprocess,
++                "run",
++                return_value=SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr=""),
++            ), redirect_stdout(captured):
++                result = export_foundation_env.main()
++
++            self.assertEqual(result, 0)
++            self.assertNotIn("safe-test-value", captured.getvalue())
++            written = env_file.read_text(encoding="utf-8")
++            self.assertIn("AIVEN_TOKEN=preserve-this-token", written)
++            self.assertIn("TF_VAR_enable_kafka_acls=true", written)
++            for env_name in export_foundation_env.OUTPUT_TO_ENV.values():
++                self.assertIn(f"{env_name}=", written)
++            if os.name == "posix":
++                self.assertEqual(stat.S_IMODE(env_file.stat().st_mode), 0o600)
++
++    def test_failed_terraform_output_does_not_echo_stderr(self):
++        with tempfile.TemporaryDirectory() as directory:
++            export_foundation_env.ENV_FILE = Path(directory) / ".env"
++            export_foundation_env.TF_DIR = Path(directory)
++            captured = io.StringIO()
++            with patch.object(
++                export_foundation_env.subprocess,
++                "run",
++                return_value=SimpleNamespace(returncode=1, stdout="", stderr="sensitive-provider-detail"),
++            ), redirect_stdout(captured), redirect_stderr(io.StringIO()):
++                result = export_foundation_env.main()
++            self.assertEqual(result, 1)
++            self.assertNotIn("sensitive-provider-detail", captured.getvalue())
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests/test_tool_validation.py b/tests/test_tool_validation.py
+index cf49b7c..94c47b2 100644
+--- a/tests/test_tool_validation.py
++++ b/tests/test_tool_validation.py
+@@ -1,5 +1,7 @@
+ import io
++import os
+ import sys
++import tempfile
+ import unittest
+ from contextlib import redirect_stdout
+ from pathlib import Path
+@@ -80,5 +82,52 @@ class ToolValidationTests(unittest.TestCase):
+                 safety.run_command(["confluent", "version"], cwd=ROOT)
+ 
+ 
++    def test_setup_initializes_local_state_backend_without_backend_false(self):
++        calls = []
++
++        def fake_run(args, **kwargs):
++            calls.append((args, kwargs))
++            return ""
++
++        with patch.object(lab, "_check_versions"), \
++             patch.object(lab, "run_command", side_effect=fake_run), \
++             patch.object(lab, "check_cli_help"), \
++             patch.dict(os.environ, {}, clear=True), \
++             redirect_stdout(io.StringIO()):
++            lab.setup()
++
++        init_call = next(call for call in calls if call[0][1] == "init")
++        self.assertNotIn("-backend=false", init_call[0])
++        self.assertIn("-lockfile=readonly", init_call[0])
++        self.assertEqual(init_call[1]["env"]["TF_LOG"], "OFF")
++
++    def test_plan_loads_local_env_and_keeps_tf_debug_logging_off(self):
++        with tempfile.TemporaryDirectory() as directory:
++            env_file = Path(directory) / ".env"
++            env_file.write_text(
++                "TF_VAR_foundation_kafka_api_key=key-id\n"
++                "TF_VAR_foundation_kafka_api_secret=key-secret-value\n",
++                encoding="utf-8",
++            )
++            captured = {}
++
++            def fake_run(args, **kwargs):
++                captured["args"] = args
++                captured["env"] = kwargs["env"]
++                captured["secrets"] = kwargs["secrets"]
++                return "Plan: 0 to add, 0 to change, 0 to destroy."
++
++            with patch.object(lab, "ENV_FILE", env_file), \
++                 patch.object(lab, "run_command", side_effect=fake_run), \
++                 patch.dict(os.environ, {}, clear=True), \
++                 redirect_stdout(io.StringIO()):
++                lab.plan()
++
++            self.assertIn("foundation.tfplan", captured["args"][-1])
++            self.assertEqual(captured["env"]["TF_VAR_foundation_kafka_api_key"], "key-id")
++            self.assertEqual(captured["env"]["TF_LOG"], "OFF")
++            self.assertIn("key-secret-value", captured["secrets"])
++
++
+ if __name__ == "__main__":
+     unittest.main()
