@@ -15,6 +15,14 @@ SECRET_ENV_KEYS = (
     "KAFKA_API_SECRET",
     "SCHEMA_REGISTRY_API_KEY",
     "SCHEMA_REGISTRY_API_SECRET",
+    "PRODUCER_KAFKA_API_KEY",
+    "PRODUCER_KAFKA_API_SECRET",
+    "CONSUMER_KAFKA_API_KEY",
+    "CONSUMER_KAFKA_API_SECRET",
+    "TF_VAR_foundation_kafka_api_key",
+    "TF_VAR_foundation_kafka_api_secret",
+    "TF_VAR_foundation_schema_registry_api_key",
+    "TF_VAR_foundation_schema_registry_api_secret",
 )
 
 

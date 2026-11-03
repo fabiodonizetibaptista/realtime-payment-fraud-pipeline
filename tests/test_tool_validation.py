@@ -1,5 +1,7 @@
 import io
+import os
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -78,6 +80,53 @@ class ToolValidationTests(unittest.TestCase):
         with patch("safety.subprocess.run", side_effect=FileNotFoundError):
             with self.assertRaisesRegex(RuntimeError, "Confluent CLI não encontrado no PATH; veja o README"):
                 safety.run_command(["confluent", "version"], cwd=ROOT)
+
+
+    def test_setup_initializes_local_state_backend_without_backend_false(self):
+        calls = []
+
+        def fake_run(args, **kwargs):
+            calls.append((args, kwargs))
+            return ""
+
+        with patch.object(lab, "_check_versions"), \
+             patch.object(lab, "run_command", side_effect=fake_run), \
+             patch.object(lab, "check_cli_help"), \
+             patch.dict(os.environ, {}, clear=True), \
+             redirect_stdout(io.StringIO()):
+            lab.setup()
+
+        init_call = next(call for call in calls if call[0][1] == "init")
+        self.assertNotIn("-backend=false", init_call[0])
+        self.assertIn("-lockfile=readonly", init_call[0])
+        self.assertEqual(init_call[1]["env"]["TF_LOG"], "OFF")
+
+    def test_plan_loads_local_env_and_keeps_tf_debug_logging_off(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env_file = Path(directory) / ".env"
+            env_file.write_text(
+                "TF_VAR_foundation_kafka_api_key=key-id\n"
+                "TF_VAR_foundation_kafka_api_secret=key-secret-value\n",
+                encoding="utf-8",
+            )
+            captured = {}
+
+            def fake_run(args, **kwargs):
+                captured["args"] = args
+                captured["env"] = kwargs["env"]
+                captured["secrets"] = kwargs["secrets"]
+                return "Plan: 0 to add, 0 to change, 0 to destroy."
+
+            with patch.object(lab, "ENV_FILE", env_file), \
+                 patch.object(lab, "run_command", side_effect=fake_run), \
+                 patch.dict(os.environ, {}, clear=True), \
+                 redirect_stdout(io.StringIO()):
+                lab.plan()
+
+            self.assertIn("foundation.tfplan", captured["args"][-1])
+            self.assertEqual(captured["env"]["TF_VAR_foundation_kafka_api_key"], "key-id")
+            self.assertEqual(captured["env"]["TF_LOG"], "OFF")
+            self.assertIn("key-secret-value", captured["secrets"])
 
 
 if __name__ == "__main__":

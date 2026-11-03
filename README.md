@@ -18,15 +18,12 @@ O instalador fixa versoes conhecidas para tornar o Codespace reproduzivel; `lab.
 
 ## Credenciais
 
-O `.env` e opcional. A forma recomendada no Codespaces e cadastrar os segredos em **GitHub > Settings > Codespaces > Codespaces secrets**, concedendo acesso ao repositorio que o usuario criar. Consulte [a documentacao oficial sobre segredos de conta](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces). Os nomes devem corresponder exatamente aos campos de `.env.example`:
+O `.env` e opcional. A forma recomendada no Codespaces e cadastrar os segredos em **GitHub > Settings > Codespaces > Codespaces secrets**, concedendo acesso ao repositorio que o usuario criar. Consulte [a documentacao oficial sobre segredos de conta](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces). Os segredos necessários nesta etapa são:
 
-- `AIVEN_TOKEN`
 - `CONFLUENT_CLOUD_API_KEY`
 - `CONFLUENT_CLOUD_API_SECRET`
-- `KAFKA_API_KEY`
-- `KAFKA_API_SECRET`
-- `SCHEMA_REGISTRY_API_KEY`
-- `SCHEMA_REGISTRY_API_SECRET`
+
+Eles devem vir de Codespaces Secrets. `AIVEN_TOKEN` será necessário quando o bloco Aiven for introduzido. As credenciais Kafka e Schema Registry da V2 serão geradas pelo Terraform e exportadas para `.env` pelo script `scripts/export_foundation_env.py`; não reutilize valores da V1.
 
 Se preferir, pode criar `.env` localmente a partir de `.env.example`; ele e ignorado pelo Git. Valores vazios do `.env` sao ignorados. Valores ja existentes no ambiente (incluindo Codespaces Secrets) nunca sao substituidos pelo arquivo. O bootstrap nao exige credenciais reais.
 
@@ -40,7 +37,7 @@ Na raiz do repositorio:
 python lab.py setup
 ```
 
-O comando confere as versoes, executa `terraform init -backend=false -lockfile=readonly`, `terraform validate` e verifica os comandos `--help` da Confluent CLI. Nao faz login, nao executa plan/apply e nao consulta nem altera recursos na nuvem.
+O comando confere as versoes, executa `terraform init -lockfile=readonly`, `terraform validate` e verifica os comandos `--help` da Confluent CLI. O backend local e inicializado para permitir State e planos nos marcos seguintes. Nao faz login, nao executa plan/apply e nao consulta nem altera recursos na nuvem.
 
 Testes sem credenciais reais:
 
@@ -54,13 +51,13 @@ Verificacao isolada da CLI:
 python lab.py check-cli
 ```
 
-No Marco 1, `python lab.py teardown` apenas confirma que ainda nao ha recursos declarados para destruir. O teardown remoto sera implementado junto com os recursos, usando `try/finally`, plano/allow-list e verificacao por listagem remota.
+No Marco 1, antes da declaracao de recursos, `python lab.py teardown` apenas confirmava que nao havia recursos. A partir do Marco 4, o comando bloqueia a operacao enquanto o fluxo remoto de teardown com plano, allow-list separada e verificacao remota nao estiver implementado.
 
 ## State e ciclo de vida
 
 O State Terraform sera local no Codespace, no diretorio de trabalho Terraform, e nunca sera enviado ao Git. `.gitignore` exclui `.terraform/`, `*.tfstate`, `*.tfstate.*`, `*.tfvars` e arquivos de plano.
 
-O fluxo de cada janela integrada sera `setup -> testes -> teardown` na mesma sessao do Codespace. O teardown sera garantido por `try/finally` e so sera considerado concluido depois de conferir por listagem remota os recursos criados, incluindo statements, conectores e topicos dinamicos de heartbeat.
+O fluxo esperado de cada janela integrada e `setup -> testes -> teardown` na mesma sessao do Codespace. No Marco 4, o wrapper remoto de apply/teardown ainda nao esta habilitado; nao executar apply antes de sua implementacao e da revisao explicita do plano. O teardown so sera considerado concluido depois de conferir por listagem remota os recursos criados, incluindo statements, conectores e topicos dinamicos de heartbeat.
 
 **Nunca apague o Codespace antes de o teardown ser confirmado por verificacao remota.** Apagar o Codespace antes disso pode eliminar o State local necessario para administrar os recursos ainda existentes.
 
@@ -109,4 +106,39 @@ Nao usar `confluent iam acl list`: o caminho correto para ACLs Kafka no Cloud e 
 
 ## Estado do Marco 1
 
-Este marco prepara o Codespace, a automacao local e os testes. A infraestrutura ainda nao foi portada; por isso `setup` nao provisiona recursos e `teardown` nao destroi recursos. O State local e o ciclo completo de teardown remoto serao exercitados nos marcos de provisionamento, sempre na mesma sessao do Codespace.
+Registro historico do Marco 1: preparacao do Codespace, automacao local e testes. A infraestrutura foi introduzida posteriormente no Marco 4; por isso, as observacoes deste bloco descrevem apenas o estado original do Marco 1.
+
+
+## Marco 4 — Foundation Confluent
+
+A Foundation declara, sem reutilizar IDs da V1:
+
+- Environment `desafio-final` com Stream Governance Essentials.
+- Kafka Basic `desafio-basic` em AWS `us-east-1`, zona unica.
+- Identidades `desafio-iac-admin`, `desafio-producer`, `desafio-consumer` e `desafio-schema-registry`.
+- API Keys de cluster para o administrador, producer e consumer; API Key do Schema Registry.
+- `CloudClusterAdmin` restrito ao CRN do cluster para a identidade técnica de IaC.
+- `DeveloperRead` e `DeveloperWrite` restritos aos subjects do Schema Registry.
+- ACLs de producer/consumer para o prefixo `desafio-`, inicialmente desabilitadas.
+
+O Kafka Basic não recebe RBAC granular por tópico/grupo; essas permissões são ACLs. O papel `CloudClusterAdmin` é aplicado somente no escopo do cluster para administrar ACLs, sem conceder `EnvironmentAdmin`. No Schema Registry, `DeveloperRead` e `DeveloperWrite` são separados; evitamos `ResourceOwner`, que concederia poderes de gestão de acesso e criação de identidades desnecessários para o contrato de schemas.
+
+### Sequência local
+
+```text
+python lab.py setup
+python lab.py test
+python lab.py plan
+```
+
+O primeiro plano deixa `enable_kafka_acls=false`, pois a API Key do `desafio-iac-admin` ainda não foi exportada para o provider. O plano é apenas leitura; não cria recursos. **Não executar apply até revisar o plano, confirmar o custo do cluster e concluir o mecanismo controlado de apply/teardown.**
+
+Depois que a Foundation for aplicada em uma janela autorizada, exporte os outputs sem imprimi-los:
+
+```text
+python scripts/export_foundation_env.py
+```
+
+O script grava os endpoints e credenciais em `.env` (ignorado pelo Git, modo de arquivo 0600), preserva os valores já existentes e habilita as ACLs para o segundo plano. Os secrets nunca são enviados ao stdout. O provider usa `TF_VAR_foundation_*` para não confundir credenciais V2 com variáveis `KAFKA_API_KEY` antigas da V1.
+
+O State Terraform local contém secrets de API Key. `sensitive=true` oculta valores na CLI, mas não cifra o State. Manter o Codespace e o State protegidos até o teardown confirmado; nunca versionar State ou plan.
