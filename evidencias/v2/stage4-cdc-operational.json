@@ -1,0 +1,25 @@
+{
+  "checked_at_utc": "2026-11-03T23:53:38.109003+00:00",
+  "connector_name": "payments-cdc-aiven",
+  "connector_state": "RUNNING",
+  "task_states": [
+    "RUNNING"
+  ],
+  "expected_topics": [
+    "payments.public.customers",
+    "payments.public.accounts",
+    "payments.public.cards",
+    "payments.public.merchants",
+    "payments.public.transactions",
+    "payments.cdc_internal.heartbeat"
+  ],
+  "observed_topics": [
+    "payments.cdc_internal.heartbeat",
+    "payments.public.accounts",
+    "payments.public.cards",
+    "payments.public.customers",
+    "payments.public.merchants",
+    "payments.public.transactions"
+  ],
+  "operational_gate": "PASS"
+}
