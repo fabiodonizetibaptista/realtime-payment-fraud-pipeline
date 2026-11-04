@@ -61,6 +61,8 @@ resource "confluent_connector" "payments_cdc" {
     # Snapshot inicial e captura continua de alteracoes.
     "snapshot.mode"         = "initial"
     "output.data.format"    = "AVRO"
+    "after.state.only"      = "false"
+    "tombstones.on.delete"  = "true"
     "output.key.format"     = "AVRO"
     "tasks.max"             = "1"
     "heartbeat.interval.ms" = "60000"
