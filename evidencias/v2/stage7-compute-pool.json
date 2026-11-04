@@ -1,0 +1,37 @@
+{
+  "stage": 7,
+  "resource": "confluent_flink_compute_pool.payment_fraud",
+  "recorded_at_utc": "2026-11-04T04:10:01.716559+00:00",
+  "compute_pool": {
+    "id": "lfcp-gq50o2n",
+    "name": "payment-fraud-v2",
+    "cloud": "AWS",
+    "region": "us-east-1",
+    "environment_id": "env-n17v3z",
+    "max_cfu": 10,
+    "default_pool": false,
+    "configuration_source": "Terraform State"
+  },
+  "provisioning": {
+    "status": "Running",
+    "source": "Confluent Cloud UI",
+    "verification": "Manual browser inspection",
+    "terraform_apply": "PASS"
+  },
+  "capacity_and_cost": {
+    "max_cfu_configured": 10,
+    "observed_current_cfu": 0,
+    "observed_running_statements": 0,
+    "observation_source": "Confluent Cloud UI",
+    "measurement_type": "Point-in-time observation",
+    "financial_cost_verified": false,
+    "financial_cost_estimate_usd": null,
+    "note": "Max CFU is a configured capacity ceiling. Observed 0 CFUs does not establish total billing cost."
+  },
+  "sql_workspace": {
+    "editor_accessible": true,
+    "source": "Confluent Cloud UI inspection",
+    "sql_execution_tested": false
+  },
+  "gate": "PASS"
+}
