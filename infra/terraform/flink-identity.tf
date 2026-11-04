@@ -25,7 +25,7 @@ resource "confluent_role_binding" "flink_processor_developer" {
   principal = "User:${confluent_service_account.flink_processor.id}"
   role_name = "FlinkDeveloper"
 
-  crn_pattern = "${confluent_environment.challenge.resource_name}/flink-region=${confluent_flink_compute_pool.payment_fraud.cloud}.${confluent_flink_compute_pool.payment_fraud.region}/compute-pool=${confluent_flink_compute_pool.payment_fraud.id}"
+  crn_pattern = confluent_environment.challenge.resource_name
 }
 
 # API Key especifica da regiao Flink.
