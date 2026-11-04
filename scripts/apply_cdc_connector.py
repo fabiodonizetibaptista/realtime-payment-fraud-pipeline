@@ -87,6 +87,28 @@ def main():
         print("APPLY_GATE=BLOCKED")
         return 1
 
+    # Evidencia dedicada, sem stdout/stderr do provider ou credenciais.
+    from datetime import datetime, timezone
+
+    evidence_dir = ROOT / "evidencias" / "v2"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    evidence = {
+        "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+        "resource": ADDRESS,
+        "planned_changes": len(changes),
+        "only_connector_create": allowed,
+        "terraform_apply_success": result.returncode == 0,
+        "connector_in_state": present,
+        "gate": "PASS" if present else "BLOCKED",
+        "secret_values_recorded": False,
+    }
+    (evidence_dir / f"{timestamp}-stage4-terraform-apply.json").write_text(
+        json.dumps(evidence, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print("APPLY_EVIDENCE_SAVED=True")
+
     print("APPLY_GATE=", "PASS" if present else "BLOCKED")
     return 0 if present else 1
 

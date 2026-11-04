@@ -1,0 +1,22 @@
+{
+  "source": "/workspaces/realtime-payment-fraud-pipeline/evidencias/v2/stage4-cdc-operational.json",
+  "checked_at_utc": "2026-11-03T23:53:38.109003+00:00",
+  "expected_topics": [
+    "payments.cdc_internal.heartbeat",
+    "payments.public.accounts",
+    "payments.public.cards",
+    "payments.public.customers",
+    "payments.public.merchants",
+    "payments.public.transactions"
+  ],
+  "observed_topics": [
+    "payments.cdc_internal.heartbeat",
+    "payments.public.accounts",
+    "payments.public.cards",
+    "payments.public.customers",
+    "payments.public.merchants",
+    "payments.public.transactions"
+  ],
+  "missing_topics": [],
+  "gate": "PASS"
+}
