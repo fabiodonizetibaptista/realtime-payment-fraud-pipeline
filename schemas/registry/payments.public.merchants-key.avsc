@@ -1,0 +1,1 @@
+{"type":"record","name":"Key","namespace":"payments.public.merchants","fields":[{"name":"merchant_id","type":"long"}],"connect.name":"payments.public.merchants.Key"}

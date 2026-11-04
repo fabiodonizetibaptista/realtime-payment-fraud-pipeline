@@ -1,0 +1,1 @@
+{"type":"record","name":"Key","namespace":"payments.public.customers","fields":[{"name":"customer_id","type":"long"}],"connect.name":"payments.public.customers.Key"}
