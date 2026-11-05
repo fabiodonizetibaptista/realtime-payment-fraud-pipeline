@@ -1,0 +1,21 @@
+{
+  "etapa": 9,
+  "tipo": "temporal_join_ctas",
+  "estado_observado": "RUNNING",
+  "observado_em_utc": "2026-11-05T01:50:45.899601+00:00",
+  "sql_sha256": "b8522e683f58d1d088d0d923ec2f0e933f6a20d3d984b092dbce56fc1adb3890",
+  "origem_registros": 4002,
+  "origem_ids_distintos": 2001,
+  "resultado_registros": 4002,
+  "resultado_ids_distintos": 2001,
+  "clientes_presentes": 4002,
+  "status_conta_presentes": 4002,
+  "pais_conta_presentes": 4002,
+  "origem_estavel": true,
+  "sem_perda_agregada": true,
+  "sem_multiplicacao_agregada": true,
+  "enriquecimento_confirmado": true,
+  "statement_delete_ok": true,
+  "tabela_temporaria_drop_ok": true,
+  "nota": "Estado RUNNING observado durante o teste. O statement foi posteriormente excluido. A comparacao de cardinalidade e agregada."
+}
