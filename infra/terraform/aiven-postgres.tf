@@ -4,8 +4,8 @@
 # Nao fixamos cloud_name: o plano Free usa uma
 # regiao elegivel selecionada pela Aiven.
 resource "aiven_pg" "payments" {
-  project      = "fabiodonizetibaptista-1c3d"
-  service_name = "pg-payment-fraud-lab"
+  project      = var.aiven_project
+  service_name = var.aiven_pg_service_name
   plan         = "free-1-1gb"
 }
 

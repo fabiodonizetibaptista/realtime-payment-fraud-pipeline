@@ -15,7 +15,7 @@ resource "confluent_service_account" "flink_processor" {
   description  = "Service account for payment fraud Flink SQL processing"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -55,6 +55,6 @@ resource "confluent_api_key" "flink_processor" {
   ]
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }

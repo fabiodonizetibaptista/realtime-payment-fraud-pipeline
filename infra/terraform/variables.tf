@@ -93,3 +93,40 @@ variable "enable_cdc_acls" {
   type        = bool
   default     = false
 }
+
+# Projeto Aiven existente, informado pelo operador.
+# Nao deve ser criado automaticamente pelo Terraform.
+variable "aiven_project" {
+  description = "Nome do projeto Aiven que hospedara o PostgreSQL."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.aiven_project)) > 0
+    error_message = "aiven_project nao pode ser vazio."
+  }
+}
+
+# Nome parametrizavel para preservar o recurso existente
+# e permitir implantacoes independentes.
+variable "aiven_pg_service_name" {
+  description = "Nome do servico PostgreSQL no projeto Aiven."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.aiven_pg_service_name)) > 0
+    error_message = "aiven_pg_service_name nao pode ser vazio."
+  }
+}
+
+# Nome do conector CDC, configurado pelo operador.
+# Deve ser unico no ambiente Confluent utilizado.
+variable "cdc_connector_name" {
+  description = "Nome do conector PostgreSQL CDC."
+  type        = string
+  default     = "payments-cdc"
+
+  validation {
+    condition     = length(trimspace(var.cdc_connector_name)) > 0
+    error_message = "cdc_connector_name nao pode ser vazio."
+  }
+}

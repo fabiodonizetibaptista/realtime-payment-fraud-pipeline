@@ -113,6 +113,18 @@ def main() -> None:
     install_terraform(arch)
     install_confluent(arch)
 
+    # Dependencias Python dos scripts de PostgreSQL e CDC.
+    # A instalacao faz parte do bootstrap para evitar passos
+    # manuais em novos ambientes Codespaces.
+    requirements = Path(__file__).resolve().parents[1] / "requirements.txt"
+    subprocess.run(
+        [
+            "python3", "-m", "pip", "install",
+            "-r", str(requirements),
+        ],
+        check=True,
+    )
+
 
 if __name__ == "__main__":
     main()

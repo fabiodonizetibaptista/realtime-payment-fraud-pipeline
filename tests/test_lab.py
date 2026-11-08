@@ -69,6 +69,62 @@ class TerraformSafetyTests(unittest.TestCase):
             safety.validate_apply_allowlist(plan, [], ["example_resource.delete_me"]),
             ["example_resource.delete_me"],
         )
+    def test_allowlist_rejects_partial_resource_name(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "example_resource.allowed_extra",
+                    "change": {"actions": ["create"]},
+                }
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "APPLY bloqueado"):
+            safety.validate_apply_allowlist(
+                plan, ["example_resource.allowed"]
+            )
+
+    def test_allowlist_accepts_count_instance(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "example_resource.allowed[0]",
+                    "change": {"actions": ["create"]},
+                }
+            ]
+        }
+        result = safety.validate_apply_allowlist(
+            plan, ["example_resource.allowed"]
+        )
+        self.assertEqual(result, ["example_resource.allowed[0]"])
+
+    def test_replacement_requires_both_permissions(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "example_resource.allowed",
+                    "change": {"actions": ["delete", "create"]},
+                }
+            ]
+        }
+        with self.assertRaises(ValueError):
+            safety.validate_apply_allowlist(
+                plan, ["example_resource.allowed"]
+            )
+
+    def test_allowlist_rejects_unknown_actions(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "example_resource.allowed",
+                    "change": {"actions": ["unexpected"]},
+                }
+            ]
+        }
+        with self.assertRaises(ValueError):
+            safety.validate_apply_allowlist(
+                plan, ["example_resource.allowed"]
+            )
+
     def test_utf8_writer_does_not_add_bom(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "evidence.txt"

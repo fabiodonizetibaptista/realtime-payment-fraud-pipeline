@@ -10,6 +10,6 @@ resource "confluent_subject_config" "transactions_value" {
   compatibility_level = "BACKWARD"
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }

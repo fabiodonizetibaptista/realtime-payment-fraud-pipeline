@@ -29,7 +29,7 @@ resource "confluent_connector" "payments_cdc" {
   }
 
   config_nonsensitive = {
-    "name"            = "payments-cdc-aiven"
+    "name"            = var.cdc_connector_name
     "connector.class" = "PostgresCdcSourceV2"
 
     # Utiliza identidade e permissoes da Foundation V2.
@@ -71,7 +71,7 @@ resource "confluent_connector" "payments_cdc" {
   # Nunca incluir senhas em config_nonsensitive.
   config_sensitive = {
     "database.password"    = var.cdc_connector_password
-    "database.sslrootcert" = file("${path.module}/../../.local/aiven-ca.pem")
+    "database.sslrootcert" = var.enable_cdc_connector ? file("${path.module}/../../.local/aiven-ca.pem") : ""
   }
 
   lifecycle {

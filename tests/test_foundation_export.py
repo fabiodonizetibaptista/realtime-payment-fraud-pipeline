@@ -30,6 +30,11 @@ class FoundationExportTests(unittest.TestCase):
                 for index, output_name in enumerate(export_foundation_env.OUTPUT_TO_ENV)
             }
             payload = {name: {"value": value, "sensitive": "secret" in name} for name, value in values.items()}
+            # O exportador exige o ID da Service Account CDC.
+            # Utilizamos um identificador ficticio neste teste.
+            payload["service_account_ids"] = {
+                "value": {"cdc": "sa-test-cdc"}
+            }
             captured = io.StringIO()
             with patch.object(
                 export_foundation_env.subprocess,

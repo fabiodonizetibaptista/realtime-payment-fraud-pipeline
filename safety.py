@@ -103,20 +103,55 @@ def changed_resources(plan: Mapping[str, object]) -> list[Mapping[str, object]]:
 
 
 def validate_apply_allowlist(
-    plan: Mapping[str, object], allow: Iterable[str], allow_destroy: Iterable[str] = (),
+    plan: Mapping[str, object], allow: Iterable[str],
+    allow_destroy: Iterable[str] = (),
 ) -> list[str]:
-    """Destruicoes exigem prefixos separados das criacoes/alteracoes."""
-    create_prefixes, destroy_prefixes = tuple(allow), tuple(allow_destroy)
+    """Valida enderecos e acoes sem autorizar recursos por prefixo parcial."""
+
+    create_addresses = frozenset(allow)
+    destroy_addresses = frozenset(allow_destroy)
+
+    def authorized(address: str, allowed: frozenset[str]) -> bool:
+        # Aceita o recurso exato ou instancias de count/for_each.
+        # Impede que "resource.foo" autorize "resource.foo_extra".
+        return any(
+            address == item or address.startswith(item + "[")
+            for item in allowed
+        )
+
     rejected = []
+    accepted = []
+
     for item in changed_resources(plan):
         address = str(item.get("address", ""))
         actions = item.get("change", {}).get("actions", [])
-        prefixes = destroy_prefixes if "delete" in actions else create_prefixes
-        if not address or not any(address.startswith(prefix) for prefix in prefixes):
-            rejected.append(f"{'+'.join(actions)} {address}".strip())
+
+        # Substituicoes tambem incluem delete e exigem autorizacao
+        # explicita de destruicao.
+        if actions in (["create"], ["update"]):
+            allowed = authorized(address, create_addresses)
+        elif actions == ["delete"]:
+            allowed = authorized(address, destroy_addresses)
+        elif actions in (["delete", "create"], ["create", "delete"]):
+            allowed = (
+                authorized(address, create_addresses)
+                and authorized(address, destroy_addresses)
+            )
+        else:
+            allowed = False
+
+        if not address or not allowed:
+            rejected.append(f"{'+'.join(map(str, actions))} {address}".strip())
+        else:
+            accepted.append(address)
+
     if rejected:
-        raise ValueError("APPLY bloqueado; mudancas fora da allow-list: " + "; ".join(rejected))
-    return [str(item.get("address", "")) for item in changed_resources(plan)]
+        raise ValueError(
+            "APPLY bloqueado; mudancas fora da allow-list: "
+            + "; ".join(rejected)
+        )
+
+    return accepted
 
 
 def run_with_teardown(work, teardown):

@@ -18,6 +18,6 @@ resource "confluent_flink_compute_pool" "payment_fraud" {
   }
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }

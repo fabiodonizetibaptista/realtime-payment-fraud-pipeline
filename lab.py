@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+from plan_review import review_plan
+
 from safety import (
     changed_resources,
     merge_env_file,
@@ -247,15 +249,330 @@ def apply_foundation(confirm: bool = False) -> None:
     )
 
 
-def teardown() -> None:
-    """Bloqueia teardown ate existir um fluxo remoto revisado e allow-listed."""
-    has_resources = any(
-        re.search(r'^\s*resource\s+"', path.read_text(encoding="utf-8"), re.MULTILINE)
-        for path in TF_DIR.glob("*.tf")
+
+def plan_pipeline() -> None:
+    """Gera plano do pipeline completo sem autorizar provisionamento.
+
+    Mantem um arquivo independente do plano historico da Foundation.
+    O plano binario pode conter segredos, portanto nunca deve ser
+    versionado, exibido ou copiado para logs.
+    """
+    merge_env_file(ENV_FILE, os.environ)
+
+    execution_env = dict(os.environ)
+    execution_env["TF_LOG"] = "OFF"
+    execution_env["TF_INPUT"] = "0"
+
+    plan_path = TF_DIR / "pipeline.tfplan"
+
+    # Um plano antigo nao pode ser reutilizado silenciosamente.
+    # A geracao de um novo plano exige revisao posterior.
+    if plan_path.exists():
+        raise RuntimeError(
+            "PIPELINE_PLAN_BLOCKED=EXISTING_PLAN; "
+            "revise e remova o plano antigo antes de gerar outro."
+        )
+
+    try:
+        run_command(
+            [
+                "terraform",
+                "plan",
+                "-no-color",
+                "-input=false",
+                "-out=pipeline.tfplan",
+            ],
+            cwd=TF_DIR,
+            env=execution_env,
+            secrets=secret_values(execution_env),
+        )
+    except (RuntimeError, OSError):
+        # O erro original do provider pode incluir valores sensiveis.
+        # O diagnostico detalhado deve ocorrer por canal seguro.
+        raise RuntimeError(
+            "PIPELINE_PLAN_FAILED; nenhuma aplicacao foi iniciada."
+        ) from None
+
+    print("PIPELINE_PLAN_CREATED=True")
+    print("PIPELINE_PLAN_FILE=infra/terraform/pipeline.tfplan")
+    print("APPLY_AUTHORIZED=False")
+
+
+def review_saved_plan(pipeline: bool = False) -> dict:
+    """Inspeciona um plano salvo sem executar apply ou consultar a nuvem."""
+
+    plan_path = TF_DIR / "pipeline.tfplan" if pipeline else TF_DIR / "foundation.tfplan"
+
+    if not plan_path.is_file():
+        raise RuntimeError("PLAN_REVIEW_BLOCKED=PLAN_FILE_NOT_FOUND")
+
+    # O plano pode conter credenciais e atributos sensiveis.
+    # Toda a leitura ocorre em memoria; nunca imprimir o JSON.
+    merge_env_file(ENV_FILE, os.environ)
+    execution_env = dict(os.environ)
+    execution_env["TF_LOG"] = "OFF"
+    execution_env["TF_INPUT"] = "0"
+
+    try:
+        raw = run_command(
+            ["terraform", "show", "-json", str(plan_path)],
+            cwd=TF_DIR,
+            env=execution_env,
+            secrets=secret_values(execution_env),
+        )
+        data = json.loads(raw)
+    except (RuntimeError, ValueError, OSError):
+        # Nao propagar stderr ou payload do Terraform:
+        # podem conter informacoes sensiveis.
+        raise RuntimeError("PLAN_REVIEW_BLOCKED=PLAN_READ_FAILED") from None
+
+    result = review_plan(data)
+
+    print("=== TERRAFORM PLAN REVIEW ===")
+    print(f"CREATE_COUNT={result['create']}")
+    print(f"UPDATE_COUNT={result['update']}")
+    print("DESTROY_COUNT=0")
+    print("REPLACEMENT_COUNT=0")
+    print("PLAN_REVIEW=PASSED")
+    print("APPLY_AUTHORIZED=False")
+
+    return result
+
+
+
+def apply_pipeline(confirm: bool = False, allow_cdc: bool = False) -> None:
+    """Aplica somente um plano salvo, revisado e aprovado pelo operador.
+
+    O conector CDC exige autorizacao adicional devido ao custo por hora.
+    Nenhum atributo sensivel do plano deve ser exibido.
+    """
+    if not confirm:
+        raise RuntimeError("PIPELINE_APPLY_BLOCKED=CONFIRMATION_REQUIRED")
+
+    plan_path = TF_DIR / "pipeline.tfplan"
+    if not plan_path.is_file():
+        raise RuntimeError("PIPELINE_APPLY_BLOCKED=PLAN_NOT_FOUND")
+
+    merge_env_file(ENV_FILE, os.environ)
+    execution_env = dict(os.environ)
+    execution_env["TF_LOG"] = "OFF"
+    execution_env["TF_INPUT"] = "0"
+
+    try:
+        raw = run_command(
+            ["terraform", "show", "-json", str(plan_path)],
+            cwd=TF_DIR,
+            env=execution_env,
+            secrets=secret_values(execution_env),
+        )
+        data = json.loads(raw)
+    except (RuntimeError, ValueError, OSError):
+        raise RuntimeError(
+            "PIPELINE_APPLY_BLOCKED=PLAN_READ_FAILED"
+        ) from None
+
+    # Reutiliza a politica extensivel. Destruicoes e substituicoes
+    # sao rejeitadas independentemente da confirmacao do operador.
+    try:
+        review = review_plan(data)
+    except ValueError:
+        raise RuntimeError(
+            "PIPELINE_APPLY_BLOCKED=UNSAFE_PLAN"
+        ) from None
+
+    resources = review["resources"]
+
+    cdc_changes = [
+        item for item in resources
+        if item["address"] == "confluent_connector.payments_cdc"
+        or item["address"].startswith(
+            "confluent_connector.payments_cdc["
+        )
+    ]
+
+    if cdc_changes and not allow_cdc:
+        raise RuntimeError(
+            "PIPELINE_APPLY_BLOCKED=CDC_REQUIRES_EXPLICIT_AUTHORIZATION"
+        )
+
+    if not resources:
+        print("PIPELINE_APPLY_SKIPPED=NO_CHANGES")
+        return
+
+    print("=== PIPELINE APPLY REVIEW ===")
+    print(f"CREATE_COUNT={review['create']}")
+    print(f"UPDATE_COUNT={review['update']}")
+    print("DESTROY_COUNT=0")
+    print("REPLACEMENT_COUNT=0")
+    print(f"CDC_CHANGES={len(cdc_changes)}")
+    print("WARNING=CLOUD_RESOURCES_MAY_GENERATE_COSTS")
+
+    # Exibir somente endereco e acao, nunca valores before/after.
+    for item in resources:
+        print(f"{item['action'].upper()} {item['address']}")
+
+    approval = input("Digite APPLY PIPELINE para autorizar: ")
+
+    if approval != "APPLY PIPELINE":
+        print("PIPELINE_APPLY_CANCELLED=True")
+        return
+
+    # O Terraform verifica se o plano salvo permanece aplicavel
+    # ao state. Nao regeneramos o plano apos a aprovacao.
+    try:
+        run_command(
+            ["terraform", "apply", "-no-color", str(plan_path)],
+            cwd=TF_DIR,
+            env=execution_env,
+            secrets=secret_values(execution_env),
+        )
+    except (RuntimeError, OSError):
+        raise RuntimeError(
+            "PIPELINE_APPLY_FAILED; verificar o estado Terraform "
+            "por procedimento seguro antes de tentar novamente."
+        ) from None
+
+    print("PIPELINE_APPLY_OK=True")
+
+
+def teardown(confirm: bool = False) -> None:
+    """Destroi somente os recursos do Terraform State atual.
+
+    Nunca reutiliza um plano antigo. A aprovacao humana ocorre
+    depois da revisao das acoes, sem imprimir atributos sensiveis.
+    """
+    if not confirm:
+        raise RuntimeError("TEARDOWN_BLOCKED=CONFIRMATION_REQUIRED")
+
+    merge_env_file(ENV_FILE, os.environ)
+
+    env = dict(os.environ)
+    env["TF_LOG"] = "OFF"
+    env["TF_INPUT"] = "0"
+
+    plan_path = TF_DIR / "teardown.tfplan"
+
+    if plan_path.exists():
+        raise RuntimeError("TEARDOWN_BLOCKED=EXISTING_PLAN")
+
+    try:
+        # Plano de destruicao, sem realizar nenhuma alteracao remota.
+        run_command(
+            [
+                "terraform", "plan", "-destroy",
+                "-no-color", "-input=false",
+                "-out=teardown.tfplan",
+            ],
+            cwd=TF_DIR,
+            env=env,
+            secrets=secret_values(env),
+        )
+
+        raw = run_command(
+            ["terraform", "show", "-json", str(plan_path)],
+            cwd=TF_DIR,
+            env=env,
+            secrets=secret_values(env),
+        )
+
+        data = json.loads(raw)
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError):
+        raise RuntimeError("TEARDOWN_PLAN_FAILED") from None
+
+    actions = []
+
+    for resource in data.get("resource_changes", []):
+        change = resource.get("change") or {}
+        action = change.get("actions") or []
+
+        if action == ["no-op"]:
+            continue
+
+        if action != ["delete"]:
+            raise RuntimeError("TEARDOWN_BLOCKED=UNSAFE_PLAN")
+
+        # Nao exibimos endereco nem atributos para evitar
+        # exposicao acidental de identificadores sensiveis.
+        actions.append(resource)
+
+    if not actions:
+        print("TEARDOWN_SKIPPED=NO_RESOURCES")
+        return
+
+    print("=== TERRAFORM TEARDOWN REVIEW ===")
+    print(f"DESTROY_COUNT={len(actions)}")
+    print("WARNING=ALL_RESOURCES_IN_CURRENT_TERRAFORM_STATE")
+    print("WARNING=DESTRUCTION_MAY_BE_IRREVERSIBLE")
+
+    approval = input("Digite DESTROY PIPELINE para confirmar: ")
+
+    if approval != "DESTROY PIPELINE":
+        print("TEARDOWN_CANCELLED=True")
+        return
+
+    try:
+        # Aplicar exclusivamente o plano previamente revisado.
+        run_command(
+            ["terraform", "apply", "-no-color", str(plan_path)],
+            cwd=TF_DIR,
+            env=env,
+            secrets=secret_values(env),
+        )
+    except (RuntimeError, OSError):
+        raise RuntimeError(
+            "TEARDOWN_FAILED=CHECK_TERRAFORM_STATE"
+        ) from None
+
+    print("TEARDOWN_COMPLETED=True")
+
+
+
+
+def setup_flink(apply: bool = False) -> None:
+    """Prepara as tabelas Flink após o provisionamento Terraform.
+
+    A consulta padrão é somente leitura. A aplicação de DDL exige
+    autorização interativa e permanece separada do Terraform Apply.
+    """
+    from dataclasses import replace
+    from scripts.flink_runtime import FlinkRuntime
+    from scripts.flink_portability import resolve_names
+    from scripts.flink_setup import preflight_tables, prepare_tables
+
+    merge_env_file(ENV_FILE, os.environ)
+
+    # Os IDs vêm do Terraform State; os nomes SQL também são
+    # resolvidos pelo State, evitando referências ao laboratório antigo.
+    runtime = FlinkRuntime.from_terraform_state()
+    catalog, database = resolve_names(runtime.config)
+    runtime.config = replace(
+        runtime.config,
+        catalog_name=catalog,
+        database_name=database,
     )
-    if has_resources:
-        raise RuntimeError("Teardown remoto sera habilitado com plano e allow-list no marco de provisionamento.")
-    print("TEARDOWN_OK; nenhum recurso declarado neste marco.")
+
+    plan = preflight_tables(runtime)
+    print("=== FLINK PREFLIGHT ===")
+    for item in plan:
+        print(f"{item['step'].name}: {item['state']}")
+
+    print("FLINK_PREFLIGHT=PASSED")
+
+    if not apply:
+        print("REMOTE_DDL_EXECUTED=False")
+        return
+
+    approval = input("Digite APPLY FLINK para autorizar os DDLs: ")
+    if approval != "APPLY FLINK":
+        print("FLINK_APPLY_CANCELLED=True")
+        return
+
+    results = prepare_tables(runtime)
+
+    for item in results:
+        print(f"{item['step']}: {item['result']}")
+
+    print("FLINK_SETUP_COMPLETED=True")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -271,7 +588,51 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="autoriza iniciar a revisao interativa da Foundation",
     )
-    commands.add_parser("teardown", help="encerra recursos gerenciados pelo Terraform")
+    review_parser = commands.add_parser(
+        "review-plan",
+        help="revisa um plano Terraform salvo sem executar apply"
+    )
+    review_parser.add_argument(
+        "--pipeline",
+        action="store_true",
+        help="revisa pipeline.tfplan em vez de foundation.tfplan",
+    )
+    commands.add_parser(
+        "plan-pipeline",
+        help="gera plano completo do pipeline sem executar apply"
+    )
+    pipeline_apply_parser = commands.add_parser(
+        "apply-pipeline",
+        help="aplica um plano completo salvo, com revisao e aprovacao",
+    )
+    pipeline_apply_parser.add_argument(
+        "--confirm-pipeline",
+        action="store_true",
+        help="habilita a revisao interativa do apply",
+    )
+    pipeline_apply_parser.add_argument(
+        "--allow-cdc",
+        action="store_true",
+        help="autoriza incluir o conector CDC, sujeito a custos",
+    )
+    flink_parser = commands.add_parser(
+        "flink-setup",
+        help="verifica ou aplica os DDLs Flink após o Terraform",
+    )
+    flink_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="habilita a confirmação interativa dos DDLs",
+    )
+    teardown_parser = commands.add_parser(
+        "teardown",
+        help="revisa e executa destruicao controlada do pipeline",
+    )
+    teardown_parser.add_argument(
+        "--confirm-destroy",
+        action="store_true",
+        help="habilita o plano de destruicao e a confirmacao interativa",
+    )
     commands.add_parser("check-cli", help="valida localmente os comandos Confluent CLI")
     commands.add_parser("test", help="executa os testes sem credenciais")
     args = parser.parse_args(argv)
@@ -282,8 +643,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             plan()
         elif args.command == "apply":
             apply_foundation(confirm=args.confirm_foundation)
+        elif args.command == "plan-pipeline":
+            plan_pipeline()
+        elif args.command == "review-plan":
+            review_saved_plan(pipeline=args.pipeline)
+        elif args.command == "apply-pipeline":
+            apply_pipeline(
+                confirm=args.confirm_pipeline,
+                allow_cdc=args.allow_cdc,
+            )
+        elif args.command == "flink-setup":
+            setup_flink(apply=args.apply)
         elif args.command == "teardown":
-            teardown()
+            teardown(confirm=args.confirm_destroy)
         elif args.command == "check-cli":
             check_cli_help()
             print(f"CONFLUENT_CLI_HELP_OK={len(CLI_HELP_COMMANDS)}")

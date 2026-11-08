@@ -1,0 +1,4 @@
+# Dependencias Python do pipeline
+# Versoes de referencia do ambiente de desenvolvimento
+pg8000==1.31.6
+confluent-kafka==2.16.1
