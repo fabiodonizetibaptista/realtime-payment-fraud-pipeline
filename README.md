@@ -1,144 +1,260 @@
-# realtime-payment-fraud-pipeline-v2
+# Real-Time Payment Fraud Pipeline
 
-Reconstrucao reprodutivel do desafio DIO de pagamentos em tempo real. A V1 e somente referencia historica; a V2 nao importa recursos nem depende dos IDs da V1.
+Pipeline de processamento de pagamentos em tempo real, com captura de alterações no PostgreSQL, streaming no Apache Kafka e detecção de padrões suspeitos por meio de Apache Flink SQL.
 
-## Ambiente oficial: GitHub Codespaces
+O projeto demonstra como integrar serviços gerenciados de banco de dados, mensageria e processamento de eventos utilizando **infraestrutura como código**, contratos de dados e consultas SQL contínuas.
 
-O desenvolvimento e a execucao da V2 acontecem no GitHub Codespaces. O notebook local nao precisa instalar Terraform nem Confluent CLI.
+## Visão geral
 
-O `.devcontainer/devcontainer.json` usa a imagem Python 3.12 e executa `.devcontainer/install_tools.py` na criacao do ambiente. O instalador usa somente a biblioteca padrao do Python para baixar e validar os checksums do [Terraform 1.16.2](https://releases.hashicorp.com/terraform/1.16.2/) e da [Confluent CLI 4.81.0](https://github.com/confluentinc/cli/releases/tag/v4.81.0). Nao ha Dockerfile proprio, Docker-in-Docker, WSL, PowerShell, `curl`, `jq` ou `psql`.
+Uma transação registrada no PostgreSQL precisa se tornar um evento disponível para análise com o menor atraso possível. Neste projeto, essa propagação ocorre por **Change Data Capture (CDC)**: alterações no banco são capturadas pelo Debezium e publicadas em tópicos Kafka. O Flink consome os eventos, realiza enriquecimento temporal e identifica sequências de pagamentos potencialmente suspeitas.
 
-Versoes minimas aceitas pelo projeto:
+A regra analítica central identifica **três transações de um mesmo cartão em uma janela de 60 segundos**, usando `MATCH_RECOGNIZE` do Flink SQL. A detecção é um exemplo didático de processamento de eventos complexos (*Complex Event Processing — CEP*), e não um motor de prevenção de fraude pronto para produção.
 
-- Python 3.12+.
-- Terraform >= 1.16.0.
-- Confluent CLI >= 4.81.0.
+### Arquitetura
 
-O instalador fixa versoes conhecidas para tornar o Codespace reproduzivel; `lab.py setup` aceita versoes superiores e avisa quando forem diferentes.
-
-## Credenciais
-
-O `.env` e opcional. A forma recomendada no Codespaces e cadastrar os segredos em **GitHub > Settings > Codespaces > Codespaces secrets**, concedendo acesso ao repositorio que o usuario criar. Consulte [a documentacao oficial sobre segredos de conta](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces). Os segredos necessários nesta etapa são:
-
-- `CONFLUENT_CLOUD_API_KEY`
-- `CONFLUENT_CLOUD_API_SECRET`
-
-Eles devem vir de Codespaces Secrets. `AIVEN_TOKEN` será necessário quando o bloco Aiven for introduzido. As credenciais Kafka e Schema Registry da V2 serão geradas pelo Terraform e exportadas para `.env` pelo script `scripts/export_foundation_env.py`; não reutilize valores da V1.
-
-Se preferir, pode criar `.env` localmente a partir de `.env.example`; ele e ignorado pelo Git. Valores vazios do `.env` sao ignorados. Valores ja existentes no ambiente (incluindo Codespaces Secrets) nunca sao substituidos pelo arquivo. O bootstrap nao exige credenciais reais.
-
-Depois de criar ou alterar um Codespaces secret, pare e reinicie o Codespace para garantir que o valor esteja disponivel no ambiente. Nunca imprima segredos no terminal ou em evidencias.
-
-## Marco 1 — Bootstrap local do Codespace
-
-Na raiz do repositorio:
-
-```text
-python lab.py setup
+```mermaid
+flowchart LR
+    A[(PostgreSQL\nAiven)] -->|CDC / Debezium| B[Confluent Cloud\nKafka]
+    B --> C[Apache Flink SQL\nTemporal Join]
+    C --> D[Apache Flink SQL\nMATCH_RECOGNIZE]
+    D --> E[Resultados e alertas\nKafka / Flink]
+    F[Schema Registry\nAvro] -. contratos .- B
+    G[Terraform] -. provisionamento .-> A
+    G -. provisionamento .-> B
+    G -. provisionamento .-> C
 ```
 
-O comando confere as versoes, executa `terraform init -lockfile=readonly`, `terraform validate` e verifica os comandos `--help` da Confluent CLI. O backend local e inicializado para permitir State e planos nos marcos seguintes. Nao faz login, nao executa plan/apply e nao consulta nem altera recursos na nuvem.
+| Componente | Responsabilidade |
+| --- | --- |
+| **Aiven PostgreSQL** | Armazenamento transacional e origem dos registros de pagamentos. |
+| **Debezium CDC (Confluent Cloud)** | Captura de alterações do PostgreSQL e publicação dos eventos no Kafka. |
+| **Apache Kafka** | Transporte de eventos entre a origem e o processamento. |
+| **Schema Registry / Avro** | Gerenciamento dos contratos e da compatibilidade de schemas. |
+| **Apache Flink SQL** | Enriquecimento temporal, análise de eventos e detecção do padrão de fraude. |
+| **Terraform** | Declaração e gerenciamento da infraestrutura e das permissões. |
+| **GitHub Codespaces** | Ambiente de execução padronizado, com as ferramentas necessárias. |
 
-Testes sem credenciais reais:
+## Pré-requisitos
 
-```text
-python lab.py test
+É necessário possuir:
+
+- Uma conta GitHub com acesso ao **GitHub Codespaces**.
+- Uma conta **Aiven** com permissão para administrar um serviço PostgreSQL compatível com replicação lógica.
+- Uma conta **Confluent Cloud** com permissões para Kafka, Schema Registry, Connect e Flink, conforme os recursos provisionados.
+- Credenciais de API válidas para os provedores, configuradas como segredos do ambiente.
+- Créditos ou orçamento para executar serviços gerenciados. **A infraestrutura não é necessariamente gratuita.**
+
+O Codespace utiliza Python 3.12 e instala Terraform 1.16.2 e Confluent CLI 4.81.0 por meio dos arquivos em `.devcontainer/`. As versões são referências da configuração do projeto; consulte também `infra/terraform/versions.tf` para as restrições dos providers.
+
+> **Custos:** o conector CDC gerenciado pode gerar cobrança enquanto estiver provisionado, mesmo sem processar novos registros. Planeje uma janela curta de execução e o desligamento dos recursos que não precisam permanecer ativos.
+
+## 1. Preparar o ambiente de desenvolvimento
+
+Abra o repositório no GitHub e selecione **Code → Codespaces → Create codespace on main** (ou na branch publicada que contenha a versão a reproduzir).
+
+No terminal do Codespace, execute, a partir da raiz do repositório:
+
+```bash
+python3 lab.py setup
+python3 lab.py check-cli
+python3 lab.py test
 ```
 
-Verificacao isolada da CLI:
+Esses comandos preparam e verificam as ferramentas locais e executam a suíte de testes. **Não provisionam o pipeline nem demonstram, isoladamente, a comunicação entre os serviços.**
 
-```text
-python lab.py check-cli
+Caso o Codespace seja reconstruído, confira se as configurações e os segredos continuam disponíveis antes de prosseguir.
+
+## 2. Configurar as credenciais
+
+Cadastre as credenciais externas em **GitHub → Settings → Codespaces → Codespaces secrets**, habilitando seu uso no repositório. Consulte a [documentação de segredos do GitHub Codespaces](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces).
+
+| Variável | Finalidade |
+| --- | --- |
+| `AIVEN_TOKEN` | Autenticação da API da Aiven. |
+| `CONFLUENT_CLOUD_API_KEY` | Autenticação da API da Confluent Cloud. |
+| `CONFLUENT_CLOUD_API_SECRET` | Segredo correspondente à API da Confluent Cloud. |
+| `KAFKA_API_KEY` / `KAFKA_API_SECRET` | Acesso ao cluster Kafka por aplicações ou scripts. |
+| `SCHEMA_REGISTRY_API_KEY` / `SCHEMA_REGISTRY_API_SECRET` | Acesso ao Schema Registry. |
+
+O arquivo `.env.example` apresenta os nomes esperados. A configuração também pode ser fornecida em um arquivo `.env` local e não versionado. Quando aplicável, credenciais Kafka e Schema Registry são geradas pelo Terraform e podem ser exportadas com:
+
+```bash
+python3 scripts/export_foundation_env.py
 ```
 
-No Marco 1, antes da declaracao de recursos, `python lab.py teardown` apenas confirmava que nao havia recursos. A partir do Marco 4, o comando bloqueia a operacao enquanto o fluxo remoto de teardown com plano, allow-list separada e verificacao remota nao estiver implementado.
+**Execute a exportação somente depois do provisionamento dos recursos correspondentes.** Os valores existentes no ambiente têm precedência sobre valores do arquivo `.env`.
 
-## State e ciclo de vida
+Nunca publique arquivos `.env`, State do Terraform, segredos, certificados privados ou respostas de comandos que exponham credenciais. Após alterar Codespaces Secrets, reinicie o Codespace para disponibilizá-los à sessão.
 
-O State Terraform sera local no Codespace, no diretorio de trabalho Terraform, e nunca sera enviado ao Git. `.gitignore` exclui `.terraform/`, `*.tfstate`, `*.tfstate.*`, `*.tfvars` e arquivos de plano.
+## 3. Provisionar a infraestrutura
 
-O fluxo esperado de cada janela integrada e `setup -> testes -> teardown` na mesma sessao do Codespace. No Marco 4, o wrapper remoto de apply/teardown ainda nao esta habilitado; nao executar apply antes de sua implementacao e da revisao explicita do plano. O teardown so sera considerado concluido depois de conferir por listagem remota os recursos criados, incluindo statements, conectores e topicos dinamicos de heartbeat.
+Os arquivos de infraestrutura estão em `infra/terraform/`. Eles descrevem os serviços de origem, recursos da Confluent Cloud, identidades, permissões, contratos de dados e componentes necessários ao processamento.
 
-**Nunca apague o Codespace antes de o teardown ser confirmado por verificacao remota.** Apagar o Codespace antes disso pode eliminar o State local necessario para administrar os recursos ainda existentes.
+Antes de realizar qualquer alteração remota:
 
-## Fronteira operacional da V1
-
-Os Marcos 2 (spike Flink) e 3 (destruicao da V1) continuam no notebook, no diretorio original da V1, usando o `scripts/terraform/tf.ps1` existente. Nao copiar o State da V1 para o Codespace nem para backend remoto; nao instalar ferramentas novas no notebook.
-
-Para verificacao remota somente de leitura da V1, usar `tf.ps1 -Action status`. O spike e a destruicao terao branches locais descartaveis na V1. A tag `v1.0` permanece intacta. A destruicao do Marco 3 exigira backup do `terraform.tfstate`, branch descartavel e autorizacao especifica com `-AllowDestroy`.
-
-## Branches por marco
-
-Manter uma branch por marco para que as alteracoes nao se misturem. Cada branch parte da ultima versao aceita; somente depois da validacao do marco o usuario promove suas alteracoes para a branch principal. O usuario cria o repositorio, as branches e faz push; nenhuma automacao deste projeto cria repositorios ou publica codigo.
-
-Nomes sugeridos para as branches V2: `marco-1-codespaces`, `marco-4-foundation`, `marco-5-rebuild`, `marco-6-e2e`, `marco-7-cdc-contracts`, `marco-8-flink-consumer` e `marco-9-delivery`. Os Marcos 2 e 3 sao operacoes no repositorio V1 original, com branches locais separadas `marco-2-flink-spike` e `marco-3-v1-teardown`.
-
-## Contratos de seguranca cobertos por testes
-
-- Redacao do valor exato do segredo, sem filtrar linhas por palavras como `password` ou `secret`.
-- Valores vazios do `.env` nao apagam Codespaces Secrets; variaveis existentes nunca sao sobrescritas.
-- stderr de processo nativo nao e tratado como falha quando o exit code e zero.
-- `try/finally` tenta teardown mesmo quando a execucao falha e preserva a excecao principal.
-- Apply exige allow-list; destruicao exige allow-list separada.
-- Colecao vazia representa zero recursos.
-- Arquivos de evidencia sao UTF-8 sem BOM.
-- O codigo operacional nao contem IDs, hosts ou nomes de recursos conhecidos da V1.
-
-As validacoes de ACL heartbeat por prefixo, TransactionalId, `prevent_destroy`, certificado PEM e inicializacao real do conector serao testes estaticos/de integracao adicionados quando os respectivos recursos forem portados. `terraform validate` sozinho nunca sera considerado prova de execucao do conector ou do statement Flink.
-
-## Comandos Confluent previstos
-
-O `setup` testa localmente `--help` para:
-
-- `confluent environment list`
-- `confluent kafka cluster list`
-- `confluent iam service-account list`
-- `confluent kafka acl list` (somente existencia do comando neste marco; flags Cloud verificadas apos login no primeiro marco autenticado)
-- `confluent kafka topic list`
-- `confluent kafka topic consume`
-- `confluent connect cluster list`
-- `confluent flink compute-pool list`
-- `confluent flink statement list`
-- `confluent schema-registry schema compatibility validate`
-- `confluent billing cost list`
-
-Nao usar `confluent iam acl list`: o caminho correto para ACLs Kafka no Cloud e `confluent kafka acl list`. A verificacao das flags Cloud `--service-account`, `--cluster` e `--environment` fica para o primeiro marco autenticado.
-
-## Estado do Marco 1
-
-Registro historico do Marco 1: preparacao do Codespace, automacao local e testes. A infraestrutura foi introduzida posteriormente no Marco 4; por isso, as observacoes deste bloco descrevem apenas o estado original do Marco 1.
-
-
-## Marco 4 — Foundation Confluent
-
-A Foundation declara, sem reutilizar IDs da V1:
-
-- Environment `desafio-final` com Stream Governance Essentials.
-- Kafka Basic `desafio-basic` em AWS `us-east-1`, zona unica.
-- Identidades `desafio-iac-admin`, `desafio-producer`, `desafio-consumer` e `desafio-schema-registry`.
-- API Keys de cluster para o administrador, producer e consumer; API Key do Schema Registry.
-- `CloudClusterAdmin` restrito ao CRN do cluster para a identidade técnica de IaC.
-- `DeveloperRead` e `DeveloperWrite` restritos aos subjects do Schema Registry.
-- ACLs de producer/consumer para o prefixo `desafio-`, inicialmente desabilitadas.
-
-O Kafka Basic não recebe RBAC granular por tópico/grupo; essas permissões são ACLs. O papel `CloudClusterAdmin` é aplicado somente no escopo do cluster para administrar ACLs, sem conceder `EnvironmentAdmin`. No Schema Registry, `DeveloperRead` e `DeveloperWrite` são separados; evitamos `ResourceOwner`, que concederia poderes de gestão de acesso e criação de identidades desnecessários para o contrato de schemas.
-
-### Sequência local
-
-```text
-python lab.py setup
-python lab.py test
-python lab.py plan
+```bash
+python3 lab.py plan
 ```
 
-O primeiro plano deixa `enable_kafka_acls=false`, pois a API Key do `desafio-iac-admin` ainda não foi exportada para o provider. O plano é apenas leitura; não cria recursos. **Não executar apply até revisar o plano, confirmar o custo do cluster e concluir o mecanismo controlado de apply/teardown.**
+Revise as ações propostas, os recursos afetados e o custo estimado. **Um plano não provisiona recursos.** A aplicação deve utilizar o procedimento controlado de Terraform disponibilizado no repositório, respeitando as aprovações e as verificações previstas nesse procedimento.
 
-Depois que a Foundation for aplicada em uma janela autorizada, exporte os outputs sem imprimi-los:
+A implantação depende de credenciais válidas e de configurações específicas da conta. Identificadores de ambiente, cluster e Compute Pool devem ser obtidos dos recursos provisionados, e não copiados de execuções anteriores.
 
-```text
-python scripts/export_foundation_env.py
+Após a aplicação, confirme o inventário:
+
+```bash
+confluent environment list
+confluent kafka cluster list
+confluent flink compute-pool list
+confluent iam service-account list
+confluent kafka acl list
 ```
 
-O script grava os endpoints e credenciais em `.env` (ignorado pelo Git, modo de arquivo 0600), preserva os valores já existentes e habilita as ACLs para o segundo plano. Os secrets nunca são enviados ao stdout. O provider usa `TF_VAR_foundation_*` para não confundir credenciais V2 com variáveis `KAFKA_API_KEY` antigas da V1.
+Esses comandos consultam a conta ativa na CLI. Verifique se o contexto selecionado corresponde ao ambiente implantado.
 
-O State Terraform local contém secrets de API Key. `sensitive=true` oculta valores na CLI, mas não cifra o State. Manter o Codespace e o State protegidos até o teardown confirmado; nunca versionar State ou plan.
+## 4. Preparar os dados e iniciar a captura CDC
+
+O fluxo de ingestão começa no PostgreSQL. A origem deve conter as tabelas transacionais exigidas pelo projeto e estar configurada para permitir replicação lógica.
+
+O conector gerenciado Debezium lê as alterações dessas tabelas e as envia aos tópicos Kafka. **Sua criação é uma operação remota potencialmente faturável.** Utilize o procedimento de ativação e desativação definido no Terraform e nos scripts do repositório; não crie um conector manual paralelo.
+
+Para verificar os conectores disponíveis:
+
+```bash
+confluent connect cluster list
+```
+
+Para consultar os tópicos do cluster selecionado:
+
+```bash
+confluent kafka topic list
+```
+
+**Validação esperada:** eventos originados por alterações no PostgreSQL chegam ao Kafka com os schemas previstos. A existência do conector ou dos tópicos, por si só, não comprova que o CDC esteja entregando eventos.
+
+## 5. Executar o processamento no Flink
+
+Os arquivos SQL do projeto ficam organizados no diretório `sql/`. Os componentes principais são:
+
+1. **Enriquecimento temporal:** combinação de transações com o estado correspondente das contas no instante do evento (*temporal join*).
+2. **Detecção do padrão:** aplicação de `MATCH_RECOGNIZE`, particionando os eventos por cartão e identificando três transações em até 60 segundos.
+3. **Consulta contínua:** materialização dos resultados da detecção para inspeção e consumo posterior.
+
+Consulte os arquivos:
+
+```text
+sql/etapa-10/01_match_recognize.sql
+sql/etapa-11/01_continuous_matches.sql
+sql/etapa-11/02_inspect_matches.sql
+```
+
+O processamento contínuo deve ser iniciado com o executor Flink do repositório, após a disponibilização da origem Kafka e a validação das permissões da identidade de execução. Utilize a ajuda dos scripts para conferir os argumentos aceitos pela versão instalada, em vez de inserir IDs ou nomes fixos nos comandos.
+
+O resultado esperado é a identificação de uma sequência de três transações de um mesmo cartão dentro do intervalo definido, mantendo identificadores que permitam rastrear os registros participantes.
+
+## 6. Simular transações e verificar a detecção
+
+O projeto contém um gerador de cenários em:
+
+```text
+scripts/etapa12_scenarios.py
+```
+
+Primeiro, confira o plano local:
+
+```bash
+python3 scripts/etapa12_scenarios.py plan
+```
+
+Durante a janela de integração, com o conector CDC e o processamento contínuo ativos, execute o cenário autorizado usando a interface `execute` do mesmo script. Ele foi desenvolvido para produzir um caso de controle e uma sequência de transações sintéticas que satisfaça o padrão de detecção.
+
+Para inspecionar as correspondências, consulte o executor e o SQL de leitura em:
+
+```text
+scripts/etapa11_execution.py
+sql/etapa-11/02_inspect_matches.sql
+```
+
+**O que comprova o funcionamento de ponta a ponta:**
+
+- As transações sintéticas foram persistidas no PostgreSQL.
+- Os eventos correspondentes chegaram aos tópicos Kafka via CDC.
+- O Flink consumiu e processou os eventos, preservando o tempo de evento esperado.
+- O padrão de três transações foi detectado e seus identificadores puderam ser rastreados.
+- Os resultados ou alertas ficaram disponíveis no destino configurado.
+
+Uma consulta SQL compilada ou um statement ativo não substitui essas evidências funcionais.
+
+## 7. Testes, monitoramento e evidências
+
+Para executar os testes automatizados locais:
+
+```bash
+python3 lab.py test
+```
+
+Para inspecionar recursos e consumo na Confluent Cloud:
+
+```bash
+confluent kafka cluster list
+confluent flink compute-pool list
+confluent iam service-account list
+confluent kafka acl list
+confluent billing cost list --start-date AAAA-MM-DD --end-date AAAA-MM-DD
+```
+
+Substitua as datas pelo período de interesse. A data final é exclusiva na consulta de billing; registros recentes podem aparecer com atraso.
+
+O projeto inclui um coletor de evidências em `scripts/etapa13_collect.py`. A coleta separa o contexto de ambiente e produz um resumo local sanitizado de inventário, ACLs e billing. Consulte sua interface para os parâmetros aceitos e mantenha a exportação fora do controle de versão. O resultado deve ser conferido contra a conta e o período selecionados antes de ser utilizado como evidência formal.
+
+Os documentos em `docs/` registram contratos analíticos, critérios de validação e evidências das etapas de processamento.
+
+## 8. Encerrar a execução e controlar custos
+
+Após a validação funcional:
+
+1. Interrompa os statements contínuos que não precisem permanecer ativos.
+2. Desative ou destrua o conector CDC pelo procedimento controlado do Terraform.
+3. Confira o estado remoto dos conectores e demais recursos sujeitos a cobrança.
+4. Consulte o billing para verificar o consumo associado à janela de execução.
+5. Preserve as evidências sanitizadas e os registros necessários à auditoria da execução.
+
+**Não exclua o Codespace ou o State local do Terraform antes de confirmar o encerramento dos recursos remotos administrados por esse State.** A remoção do ambiente local sem essa verificação pode dificultar a administração ou a destruição dos recursos restantes.
+
+A exclusão de infraestrutura deve ser deliberada e compatível com o plano Terraform revisado; não execute `terraform destroy` indiscriminadamente.
+
+## Estrutura do repositório
+
+```text
+.devcontainer/        Ambiente e instalação de ferramentas no Codespaces
+infra/terraform/      Infraestrutura como código
+scripts/             Automação operacional, cenários e coleta de evidências
+sql/                 Consultas SQL de enriquecimento e detecção
+tests/               Testes automatizados
+docs/               Contratos, procedimentos e evidências técnicas
+.env.example         Modelo de variáveis de ambiente
+lab.py               Interface para preparação, validação e testes locais
+README.md            Guia de arquitetura e utilização
+```
+
+## Segurança e boas práticas
+
+- Utilize credenciais com o menor privilégio necessário e não as adicione ao repositório.
+- Trate Terraform State e arquivos de plano como material sensível.
+- Consulte o ambiente selecionado antes de executar comandos remotos.
+- Prefira os scripts e configurações versionados a alterações manuais na interface dos provedores.
+- Use dados sintéticos para demonstrações e testes.
+- Registre evidências sem senhas, API Keys, tokens ou dados de pagamento reais.
+- Verifique limites gratuitos, créditos, preços vigentes e consumo antes de provisionar componentes faturáveis.
+
+## Referências
+
+- [Aiven — PostgreSQL](https://aiven.io/docs/products/postgresql)
+- [Confluent Cloud — documentação](https://docs.confluent.io/cloud/current/overview.html)
+- [Apache Flink — documentação](https://flink.apache.org/)
+- [Terraform — documentação](https://developer.hashicorp.com/terraform/docs)
+- [GitHub Codespaces — documentação](https://docs.github.com/en/codespaces)
+
+---
+
+**Nota de execução:** este README descreve os recursos, o fluxo operacional e os critérios de validação. A execução integrada deve ser comprovada por evidências coletadas no ambiente efetivamente provisionado; resultados de testes locais não equivalem à homologação do pipeline em nuvem.
