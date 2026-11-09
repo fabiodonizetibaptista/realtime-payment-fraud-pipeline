@@ -5,6 +5,7 @@
 SELECT
     card_id,
     first_transaction_id,
+    middle_transaction_id,
     last_transaction_id,
     transaction_count,
     first_rowtime,

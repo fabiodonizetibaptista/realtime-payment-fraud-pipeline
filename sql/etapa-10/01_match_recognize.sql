@@ -36,6 +36,7 @@ WITH transacoes_enriquecidas AS (
 SELECT
     card_id,
     first_transaction_id,
+    middle_transaction_id,
     last_transaction_id,
     transaction_count,
     first_rowtime,
@@ -46,6 +47,7 @@ MATCH_RECOGNIZE (
     ORDER BY transaction_rowtime
     MEASURES
         FIRST(T.transaction_id) AS first_transaction_id,
+        LAST(T.transaction_id, 1) AS middle_transaction_id,
         LAST(T.transaction_id) AS last_transaction_id,
         COUNT(T.transaction_id) AS transaction_count,
         FIRST(T.transaction_rowtime) AS first_rowtime,
