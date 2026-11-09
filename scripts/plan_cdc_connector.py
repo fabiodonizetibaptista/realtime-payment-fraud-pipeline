@@ -103,6 +103,31 @@ def main():
             print(f"ERROR_{index}_CATEGORY={category}")
 
         print("ERROR_COUNT=", len(headings))
+
+        # O Terraform pode retornar falhas sem o prefixo "Error:".
+        # Classificamos todo o diagnostico, sem expor seu conteudo.
+        diagnostic_patterns = {
+            "PROVIDER_CONFIGURATION": r"requires explicit configuration|invalid provider configuration",
+            "PROVIDER_AUTH": r"unauthorized|forbidden|authentication failed|401|403|invalid token",
+            "STATE_LOCK": r"error acquiring the state lock|state lock",
+            "STATE_BACKEND": r"backend initialization|required backend|failed to load state",
+            "PROVIDER_PLUGIN": r"failed to load plugin|failed to instantiate provider|plugin did not respond",
+            "NETWORK": r"connection refused|connection reset|timeout|tls handshake|no such host",
+            "MISSING_VARIABLE": r"no value for required variable|input variable.*not set",
+            "INVALID_REFERENCE": r"reference to undeclared",
+            "INVALID_RESOURCE": r"unsupported argument|unsupported block|invalid resource",
+            "PLAN_FILE": r"failed to save plan|error writing plan",
+        }
+
+        matched = [
+            name
+            for name, pattern in diagnostic_patterns.items()
+            if re.search(pattern, diagnostic, re.IGNORECASE | re.DOTALL)
+        ]
+
+        print("DIAGNOSTIC_PRESENT=", bool(diagnostic.strip()))
+        print("DIAGNOSTIC_LENGTH=", len(diagnostic))
+        print("DIAGNOSTIC_CATEGORIES=", ",".join(matched) if matched else "UNCLASSIFIED")
         print("AIVEN_TOKEN_PRESENT=", bool(execution_env.get("AIVEN_TOKEN")))
         print("CONFLUENT_CLOUD_AUTH_PRESENT=", all(
             execution_env.get(key)

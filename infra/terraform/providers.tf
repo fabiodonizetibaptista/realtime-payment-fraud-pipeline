@@ -17,3 +17,7 @@ provider "confluent" {
 # The Aiven provider is intentionally configured in the next infrastructure
 # block, when Aiven resources are introduced. The provider dependency remains
 # pinned in versions.tf and .terraform.lock.hcl.
+
+# Autenticacao obtida de AIVEN_TOKEN no ambiente.
+# O token nao deve ser declarado no codigo nem registrado em logs.
+provider "aiven" {}

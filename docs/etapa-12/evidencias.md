@@ -129,4 +129,4 @@ Não declarar equivalência sem evidência.
 - [ ] Alerta observado no destino
 - [ ] Três transações rastreáveis
 
-**STATUS: PREPARADO PARA EXECUÇÃO INTEGRAL.**
+**STATUS: CENÁRIOS PREPARADOS; INSERÇÃO REAL E ALERTAS NÃO COMPROVADOS.**

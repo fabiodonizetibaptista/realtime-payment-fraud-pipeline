@@ -77,4 +77,4 @@ Uma consulta de inspeção deve ser independente do statement contínuo.
 - [ ] Consulta independente retorna registros
 - [ ] Tratamento de card_id nulo confirmado
 
-**Status: AGUARDANDO EXECUÇÃO INTEGRAL.**
+**Status: IMPLEMENTAÇÃO PREPARADA; EXECUÇÃO CONTÍNUA NO FLINK NÃO COMPROVADA.**

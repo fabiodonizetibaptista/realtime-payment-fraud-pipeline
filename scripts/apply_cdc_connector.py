@@ -1,5 +1,6 @@
 """Aplica exclusivamente o plano aprovado de criacao do conector CDC."""
 
+import argparse
 import json
 import os
 import subprocess
@@ -114,6 +115,14 @@ def main():
 
 
 if __name__ == "__main__":
+    # O parser deve executar antes de main() para que --help e
+    # argumentos invalidos nunca acionem Terraform.
+    parser = argparse.ArgumentParser(
+        description="Aplica um plano Terraform previamente aprovado "
+                    "para criar exclusivamente o conector CDC."
+    )
+    parser.parse_args()
+
     try:
         raise SystemExit(main())
     except Exception as error:

@@ -14,6 +14,24 @@ Consulta de inspeção:
 A tabela representa correspondências identificadas pela regra
 de fraude. Ela não registra todas as transações individuais.
 
+## Nomenclatura do destino
+
+O exemplo de entrega do desafio utiliza o nome
+`desafio.fraud.detected` para o destino dos alertas.
+
+Esta implementação utiliza `fraud.pattern_matches`,
+definido pelo CTAS em
+`sql/etapa-11/01_continuous_matches.sql`.
+
+A diferença é de nomenclatura: o destino implementado
+representa as correspondências identificadas pela regra
+de três transações positivas do mesmo cartão em até
+60 segundos.
+
+A declaração SQL define o destino pretendido. A
+criação efetiva do tópico e a publicação dos alertas
+dependem de comprovação na execução integrada.
+
 ## Contrato de saída
 
 | Campo | Significado |

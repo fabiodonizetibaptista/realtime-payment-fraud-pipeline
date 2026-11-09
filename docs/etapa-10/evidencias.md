@@ -57,4 +57,4 @@ PASS local não constitui evidência de execução no Flink.
 - [ ] Correspondência observada
 - [ ] Cenários positivos e negativos documentados
 
-**Status final: AGUARDANDO EXECUÇÃO INTEGRAL.**
+**Status final: IMPLEMENTAÇÃO E TESTES LOCAIS CONCLUÍDOS; VALIDAÇÃO REAL NO FLINK NÃO COMPROVADA.**
