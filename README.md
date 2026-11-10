@@ -34,59 +34,75 @@ flowchart LR
 | **Schema Registry / Avro** | Gerenciamento dos contratos e da compatibilidade de schemas. |
 | **Apache Flink SQL** | Enriquecimento temporal, análise de eventos e detecção do padrão de fraude. |
 | **Terraform** | Declaração e gerenciamento da infraestrutura e das permissões. |
-| **GitHub Codespaces** | Ambiente de execução padronizado, com as ferramentas necessárias. |
+| **Ambiente de execução** | Terminal local ou remoto com Python, Terraform e Confluent CLI; Codespaces é opcional. |
 
 ## Pré-requisitos
 
 É necessário possuir:
 
-- Uma conta GitHub com acesso ao **GitHub Codespaces**.
+- Um ambiente local ou remoto compat?vel com as ferramentas do projeto (Windows, Linux ou macOS).
+- Git, Python e Terraform, conforme os requisitos de vers?o definidos neste reposit?rio.
+- Confluent CLI e acesso ?s contas de Aiven e Confluent Cloud utilizadas pela arquitetura.
+
+O GitHub Codespaces ? opcional. Pode ser utilizado como ambiente de desenvolvimento, mas n?o ? necess?rio para reproduzir o projeto. A compatibilidade de cada sistema operacional deve ser validada com os comandos de instala??o e testes documentados.
 - Uma conta **Aiven** com permissão para administrar um serviço PostgreSQL compatível com replicação lógica.
 - Uma conta **Confluent Cloud** com permissões para Kafka, Schema Registry, Connect e Flink, conforme os recursos provisionados.
 - Credenciais de API válidas para os provedores, configuradas como segredos do ambiente.
 - Créditos ou orçamento para executar serviços gerenciados. **A infraestrutura não é necessariamente gratuita.**
 
-O Codespace utiliza Python 3.12 e instala Terraform 1.16.2 e Confluent CLI 4.81.0 por meio dos arquivos em `.devcontainer/`. As versões são referências da configuração do projeto; consulte também `infra/terraform/versions.tf` para as restrições dos providers.
+O projeto exige **Python 3.12+**, **Terraform 1.16+** e **Confluent CLI 4.81+** (mínimos verificados em `lab.py`). Instale as dependências Python de `requirements.txt`. O `.devcontainer/` oferece uma configuração opcional, com versões de referência das ferramentas; consulte `infra/terraform/versions.tf` para os providers.
+
+**Atenção à portabilidade:** o projeto é projetado para execução em terminais compatíveis, mas os testes locais não demonstram uma implantação de ponta a ponta em todos os sistemas operacionais. Consulte [Implantação e portabilidade](docs/deployment.md).
 
 > **Custos:** o conector CDC gerenciado pode gerar cobrança enquanto estiver provisionado, mesmo sem processar novos registros. Planeje uma janela curta de execução e o desligamento dos recursos que não precisam permanecer ativos.
 
-## 1. Preparar o ambiente de desenvolvimento
+## 1. Preparar o ambiente de execução
 
-Abra o repositório no GitHub e selecione **Code → Codespaces → Create codespace on main** (ou na branch publicada que contenha a versão a reproduzir).
+Clone o repositório em seu computador ou em um ambiente remoto. **Não é necessário GitHub Codespaces.** Instale Git, Python 3.12+, Terraform 1.16+ e Confluent CLI 4.81+ antes da validação. Consulte o [guia de implantação](docs/deployment.md) para os pré-requisitos e as limitações de portabilidade.
 
-No terminal do Codespace, execute, a partir da raiz do repositório:
+Prepare um ambiente virtual e instale as dependências:
 
-```bash
-python3 lab.py setup
-python3 lab.py check-cli
-python3 lab.py test
+**Windows (PowerShell):**
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe lab.py setup
+.\.venv\Scripts\python.exe lab.py check-cli
+.\.venv\Scripts\python.exe lab.py test
 ```
 
-Esses comandos preparam e verificam as ferramentas locais e executam a suíte de testes. **Não provisionam o pipeline nem demonstram, isoladamente, a comunicação entre os serviços.**
+**Linux/macOS (shell):**
 
-Caso o Codespace seja reconstruído, confira se as configurações e os segredos continuam disponíveis antes de prosseguir.
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python lab.py setup
+.venv/bin/python lab.py check-cli
+.venv/bin/python lab.py test
+```
 
-## 2. Configurar as credenciais
+Esses comandos validam ferramentas e testes locais, **sem provisionar os serviços externos**. Os executáveis `terraform` e `confluent` precisam estar disponíveis no `PATH`. Se o comando `py -3.12` não existir no Windows, utilize o executável Python 3.12+ instalado.
 
-Cadastre as credenciais externas em **GitHub → Settings → Codespaces → Codespaces secrets**, habilitando seu uso no repositório. Consulte a [documentação de segredos do GitHub Codespaces](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-your-account-specific-secrets-for-github-codespaces).
+## 2. Configurar credenciais e parâmetros
+
+Forneça credenciais por variáveis de ambiente do sistema ou por `.env` **local e não versionado**, a partir de `.env.example`. Em ambientes remotos, utilize um mecanismo de gestão de segredos compatível (por exemplo, variáveis protegidas do provedor); Codespaces Secrets são apenas uma opção.
 
 | Variável | Finalidade |
 | --- | --- |
-| `AIVEN_TOKEN` | Autenticação da API da Aiven. |
-| `CONFLUENT_CLOUD_API_KEY` | Autenticação da API da Confluent Cloud. |
-| `CONFLUENT_CLOUD_API_SECRET` | Segredo correspondente à API da Confluent Cloud. |
-| `KAFKA_API_KEY` / `KAFKA_API_SECRET` | Acesso ao cluster Kafka por aplicações ou scripts. |
-| `SCHEMA_REGISTRY_API_KEY` / `SCHEMA_REGISTRY_API_SECRET` | Acesso ao Schema Registry. |
+| `AIVEN_TOKEN` | API da Aiven. |
+| `CONFLUENT_CLOUD_API_KEY` / `CONFLUENT_CLOUD_API_SECRET` | API da Confluent Cloud. |
+| `TF_VAR_aiven_project` | Projeto Aiven **preexistente**, onde será criado o PostgreSQL. |
+| `TF_VAR_aiven_pg_service_name` | Nome desejado para o serviço PostgreSQL. |
+| `TF_VAR_foundation_*` | Parâmetros e chaves gerados/obtidos após a criação da Foundation, quando necessários. |
 
-O arquivo `.env.example` apresenta os nomes esperados. A configuração também pode ser fornecida em um arquivo `.env` local e não versionado. Quando aplicável, credenciais Kafka e Schema Registry são geradas pelo Terraform e podem ser exportadas com:
+**O projeto Aiven deve existir antes da implantação; o Terraform cria o serviço PostgreSQL, não a conta/projeto Aiven.** As credenciais Kafka/Schema Registry geradas pelo Terraform podem ser exportadas para o `.env` local usando:
 
 ```bash
-python3 scripts/export_foundation_env.py
+python scripts/export_foundation_env.py
 ```
 
-**Execute a exportação somente depois do provisionamento dos recursos correspondentes.** Os valores existentes no ambiente têm precedência sobre valores do arquivo `.env`.
-
-Nunca publique arquivos `.env`, State do Terraform, segredos, certificados privados ou respostas de comandos que exponham credenciais. Após alterar Codespaces Secrets, reinicie o Codespace para disponibilizá-los à sessão.
+Execute a exportação somente após o provisionamento correspondente. Os valores já definidos no ambiente têm precedência sobre o `.env` para os scripts que usam o carregador do projeto. Não publique `.env`, arquivos de State ou planos Terraform: eles podem conter segredos. Não cole saídas brutas de ferramentas contendo credenciais em logs ou issues.
 
 ## 3. Provisionar a infraestrutura
 
@@ -221,14 +237,14 @@ Após a validação funcional:
 4. Consulte o billing para verificar o consumo associado à janela de execução.
 5. Preserve as evidências sanitizadas e os registros necessários à auditoria da execução.
 
-**Não exclua o Codespace ou o State local do Terraform antes de confirmar o encerramento dos recursos remotos administrados por esse State.** A remoção do ambiente local sem essa verificação pode dificultar a administração ou a destruição dos recursos restantes.
+**Não exclua o ambiente de execução ou o State local do Terraform antes de confirmar o encerramento dos recursos remotos administrados por esse State.** A remoção do ambiente local sem essa verificação pode dificultar a administração ou a destruição dos recursos restantes.
 
 A exclusão de infraestrutura deve ser deliberada e compatível com o plano Terraform revisado; não execute `terraform destroy` indiscriminadamente.
 
 ## Estrutura do repositório
 
 ```text
-.devcontainer/        Ambiente e instalação de ferramentas no Codespaces
+.devcontainer/        Ambiente opcional de desenvolvimento com ferramentas pré-configuradas
 infra/terraform/      Infraestrutura como código
 scripts/             Automação operacional, cenários e coleta de evidências
 sql/                 Consultas SQL de enriquecimento e detecção
@@ -255,7 +271,7 @@ README.md            Guia de arquitetura e utilização
 - [Confluent Cloud — documentação](https://docs.confluent.io/cloud/current/overview.html)
 - [Apache Flink — documentação](https://flink.apache.org/)
 - [Terraform — documentação](https://developer.hashicorp.com/terraform/docs)
-- [GitHub Codespaces — documentação](https://docs.github.com/en/codespaces)
+- [GitHub Codespaces — ambiente opcional](https://docs.github.com/en/codespaces)
 
 ---
 

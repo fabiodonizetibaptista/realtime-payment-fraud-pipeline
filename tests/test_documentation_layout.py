@@ -21,6 +21,20 @@ class DocumentationLayoutTests(unittest.TestCase):
         self.assertIn('docs/decisions/postgres-cdc.md', source)
         self.assertIn('DECISAO_MERCHANTS=60', decision)
 
+    def test_readme_does_not_require_codespaces(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("Codespaces é opcional", readme)
+        self.assertIn("Windows (PowerShell)", readme)
+        self.assertIn("Linux/macOS (shell)", readme)
+        self.assertNotIn("Create codespace on main", readme)
+        self.assertNotIn("Uma conta GitHub com acesso", readme)
+
+    def test_example_env_lists_required_aiven_parameters(self):
+        example = (ROOT / ".env.example").read_text(encoding="utf-8")
+        self.assertIn("TF_VAR_aiven_project=", example)
+        self.assertIn("TF_VAR_aiven_pg_service_name=", example)
+        self.assertNotIn("V1", example)
+
 
 if __name__ == "__main__":
     unittest.main()
