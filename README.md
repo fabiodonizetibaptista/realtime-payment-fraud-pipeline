@@ -4,6 +4,8 @@ Pipeline de processamento de pagamentos em tempo real, com captura de alteraçõ
 
 O projeto demonstra como integrar serviços gerenciados de banco de dados, mensageria e processamento de eventos utilizando **infraestrutura como código**, contratos de dados e consultas SQL contínuas.
 
+Os [requisitos e critérios de aceite](docs/requirements.md) resumem o escopo exigido para a entrega e distinguem implementações de evidências de execução.
+
 ## Visão geral
 
 Uma transação registrada no PostgreSQL precisa se tornar um evento disponível para análise com o menor atraso possível. Neste projeto, essa propagação ocorre por **Change Data Capture (CDC)**: alterações no banco são capturadas pelo Debezium e publicadas em tópicos Kafka. O Flink consome os eventos, realiza enriquecimento temporal e identifica sequências de pagamentos potencialmente suspeitas.
