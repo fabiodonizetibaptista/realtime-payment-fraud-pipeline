@@ -4,7 +4,7 @@ import unittest
 from decimal import Decimal
 from unittest.mock import patch
 
-from scripts import etapa13_collect as collector
+from scripts import collect_operations_evidence as collector
 
 
 class Etapa13CollectTests(unittest.TestCase):

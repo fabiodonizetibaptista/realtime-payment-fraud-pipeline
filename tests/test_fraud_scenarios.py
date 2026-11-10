@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import etapa12_scenarios as scenarios
+from scripts import fraud_scenarios as scenarios
 
 
 class Etapa12ScenarioTests(unittest.TestCase):
@@ -44,7 +44,7 @@ class Etapa12ScenarioTests(unittest.TestCase):
     def test_execute_requires_explicit_confirmation(self):
         with (
             patch("sys.argv", [
-                "etapa12_scenarios",
+                "fraud_scenarios",
                 "execute",
             ]),
             patch.object(

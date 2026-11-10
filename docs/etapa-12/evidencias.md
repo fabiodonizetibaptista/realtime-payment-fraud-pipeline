@@ -10,18 +10,18 @@
 
 ## 2. Comandos e registros de teste
 
-Script: `scripts/etapa12_scenarios.py`
+Script: `scripts/fraud_scenarios.py`
 
 Preparação local:
 
 ```bash
-python3 -m scripts.etapa12_scenarios plan
+python3 -m scripts.fraud_scenarios plan
 ```
 
 Execução real, somente após autorização:
 
 ```bash
-python3 -m scripts.etapa12_scenarios execute --confirm-execute
+python3 -m scripts.fraud_scenarios execute --confirm-execute
 ```
 
 O manifesto privado `.local/etapa12-scenarios.json`

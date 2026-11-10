@@ -159,13 +159,13 @@ O resultado esperado é a identificação de uma sequência de três transaçõe
 O projeto contém um gerador de cenários em:
 
 ```text
-scripts/etapa12_scenarios.py
+scripts/fraud_scenarios.py
 ```
 
 Primeiro, confira o plano local:
 
 ```bash
-python3 scripts/etapa12_scenarios.py plan
+python3 scripts/fraud_scenarios.py plan
 ```
 
 Durante a janela de integração, com o conector CDC e o processamento contínuo ativos, execute o cenário autorizado usando a interface `execute` do mesmo script. Ele foi desenvolvido para produzir um caso de controle e uma sequência de transações sintéticas que satisfaça o padrão de detecção.
@@ -173,7 +173,7 @@ Durante a janela de integração, com o conector CDC e o processamento contínuo
 Para inspecionar as correspondências, consulte o executor e o SQL de leitura em:
 
 ```text
-scripts/etapa11_execution.py
+scripts/fraud_stream.py
 sql/fraud_detection/continuous/02_inspect_matches.sql
 ```
 
@@ -207,7 +207,7 @@ confluent billing cost list --start-date AAAA-MM-DD --end-date AAAA-MM-DD
 
 Substitua as datas pelo período de interesse. A data final é exclusiva na consulta de billing; registros recentes podem aparecer com atraso.
 
-O projeto inclui um coletor de evidências em `scripts/etapa13_collect.py`. A coleta separa o contexto de ambiente e produz um resumo local sanitizado de inventário, ACLs e billing. Consulte sua interface para os parâmetros aceitos e mantenha a exportação fora do controle de versão. O resultado deve ser conferido contra a conta e o período selecionados antes de ser utilizado como evidência formal.
+O projeto inclui um coletor de evidências em `scripts/collect_operations_evidence.py`. A coleta separa o contexto de ambiente e produz um resumo local sanitizado de inventário, ACLs e billing. Consulte sua interface para os parâmetros aceitos e mantenha a exportação fora do controle de versão. O resultado deve ser conferido contra a conta e o período selecionados antes de ser utilizado como evidência formal.
 
 Os documentos em `docs/` registram contratos analíticos, critérios de validação e evidências das etapas de processamento.
 

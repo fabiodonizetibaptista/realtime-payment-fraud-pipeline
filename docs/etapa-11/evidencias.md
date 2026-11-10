@@ -27,7 +27,7 @@ SQL:
 `sql/fraud_detection/continuous/02_inspect_matches.sql`
 
 Comando:
-`python3 -m scripts.etapa11_execution inspect`
+`python3 -m scripts.fraud_stream inspect`
 
 - [ ] SELECT executado separadamente
 - [ ] Resultado observado

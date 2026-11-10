@@ -118,8 +118,8 @@ Essas consultas são somente leitura.
 
 Scripts existentes:
 
-- scripts/etapa13_observability.py
-- scripts/etapa13_collect.py
+- scripts/observability_plan.py
+- scripts/collect_operations_evidence.py
 
 Estado atual:
 - [x] Comandos de consulta identificados

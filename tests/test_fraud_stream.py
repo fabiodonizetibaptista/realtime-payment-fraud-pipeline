@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from scripts import etapa11_execution as executor
+from scripts import fraud_stream as executor
 
 
 class Etapa11ExecutionTests(unittest.TestCase):
