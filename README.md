@@ -58,6 +58,21 @@ O projeto exige **Python 3.12+**, **Terraform 1.16+** e **Confluent CLI 4.81+** 
 
 ## 1. Preparar o ambiente de execução
 
+**Bootstrap portavel (Windows, Linux e macOS):** antes da instalacao e da configuracao de contas, consulte as orientacoes especificas para seu sistema:
+
+```text
+python -m scripts.bootstrap_local instructions
+```
+
+Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py -3.12`, conforme disponibilidade). O assistente **nao instala** softwares nem acessa a nuvem; fornece links oficiais e instrucoes de `PATH`. Depois de instalar as ferramentas, execute `python -m scripts.check_environment`. Para criar um `.env` local a partir do modelo **sem substituir arquivo existente**, execute:
+
+```text
+python -m scripts.bootstrap_local init-env
+```
+
+A criacao nao preenche credenciais, e o arquivo `.env` deve permanecer fora do controle de versao. Consulte [o guia de bootstrap multiplataforma](docs/local-bootstrap.md).
+
+
 Clone o repositório em seu computador ou em um ambiente remoto. **Não é necessário GitHub Codespaces.** Instale Git, Python 3.12+, Terraform 1.16+ e Confluent CLI 4.81+ antes da validação. Consulte o [guia de implantação](docs/deployment.md) para os pré-requisitos e as limitações de portabilidade.
 
 Prepare um ambiente virtual e instale as dependências:
