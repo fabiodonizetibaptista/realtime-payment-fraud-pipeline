@@ -3,6 +3,13 @@
 Esta documentação descreve o **estado implementado** do pipeline e diferencia
 resultados históricos observados de validação operacional ainda não comprovada.
 
+## Guias de reprodução e operação
+
+- [Arquitetura e decisões técnicas](architecture.md)
+- [Implantação e portabilidade](deployment.md)
+- [Operação, segurança e custos](operations.md)
+- [Validação e rastreabilidade](validation.md)
+
 ## Arquitetura e contratos
 
 - [Requisitos e critérios de aceite](requirements.md)
