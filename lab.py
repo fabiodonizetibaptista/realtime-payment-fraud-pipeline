@@ -123,12 +123,17 @@ def plan() -> None:
     execution_env = dict(os.environ)
     execution_env["TF_LOG"] = "OFF"
     secrets = secret_values(execution_env)
-    result = run_command(
-        ["terraform", "plan", "-no-color", "-out=foundation.tfplan"],
-        cwd=TF_DIR, env=execution_env, secrets=secrets,
-    )
-    if result.strip():
-        print(result.strip())
+    # Bootstrap em duas fases: o primeiro plano deve conter apenas os 14
+    # recursos da Foundation. Um plan geral incluiria PostgreSQL/Flink/ACLs
+    # que exigem credenciais exportadas somente depois da Foundation.
+    # -target e usado deliberadamente apenas neste bootstrap; a segunda
+    # fase usa plan-pipeline sem -target para reconciliar o modulo completo.
+    targets = [f"-target={address}" for address in sorted(FOUNDATION_APPLY_RESOURCES)]
+    command = ["terraform", "plan", "-no-color", "-input=false", *targets,
+               "-out=foundation.tfplan"]
+    run_command(command, cwd=TF_DIR, env=execution_env, secrets=secrets)
+    # Nao imprimir o output bruto do provider (pode conter atributos sensiveis).
+    print(f"FOUNDATION_TARGETS={len(targets)}")
     print("FOUNDATION_PLAN_READY=True; nenhum recurso remoto foi criado ou alterado.")
 
 
@@ -149,8 +154,12 @@ def validate_foundation_plan(plan: dict) -> list[str]:
 
     if missing or unexpected:
         raise RuntimeError(
-            "Plano Foundation divergente. "
-            f"AUSENTES={missing}; NAO_AUTORIZADOS={unexpected}"
+            "Plano Foundation divergente. Nenhum apply iniciado. "
+            f"AUSENTES={missing}; NAO_AUTORIZADOS={unexpected}. "
+            "Revise as divergencias e o Terraform State; depois descarte o "
+            "foundation.tfplan antigo de modo controlado e execute "
+            "python lab.py plan novamente. Nao execute terraform apply "
+            "diretamente nem amplie a allowlist."
         )
 
     non_create = []
