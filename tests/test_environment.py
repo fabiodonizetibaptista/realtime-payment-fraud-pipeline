@@ -45,6 +45,16 @@ class EnvironmentTests(unittest.TestCase):
             safety.merge_env_file(path, environment)
             self.assertEqual(environment["EXISTING"], "")
 
+    def test_secret_values_redacts_windows_normalized_environment_keys(self):
+        # No Windows, dict(os.environ) pode conter apenas chaves em maiusculas.
+        values = {
+            "TF_VAR_FOUNDATION_KAFKA_API_KEY": "key-id-1234",
+            "TF_VAR_FOUNDATION_KAFKA_API_SECRET": "secret-value-1234",
+        }
+        secrets = safety.secret_values(values)
+        self.assertIn("key-id-1234", secrets)
+        self.assertIn("secret-value-1234", secrets)
+
     def test_setup_does_not_create_optional_env_file(self):
         with tempfile.TemporaryDirectory() as directory:
             env_file = Path(directory) / ".env"

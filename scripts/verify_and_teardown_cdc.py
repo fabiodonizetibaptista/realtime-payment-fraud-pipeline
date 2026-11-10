@@ -223,7 +223,7 @@ def main():
             else "BLOCKED"
         )
 
-        evidence_dir = ROOT / "evidencias" / "v2"
+        evidence_dir = ROOT / "evidencias" / "cdc"
         evidence_dir.mkdir(parents=True, exist_ok=True)
         evidence_file = evidence_dir / "stage4-cdc-operational.json"
         evidence_file.write_text(

@@ -253,7 +253,7 @@ def audit():
             else "PARTIAL"
         )
 
-        output = ROOT / "evidencias/v2/stage5-cdc-consumer.json"
+        output = ROOT / "evidencias/cdc/stage5-cdc-consumer.json"
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(
             json.dumps(report, indent=2, ensure_ascii=False) + "\n",

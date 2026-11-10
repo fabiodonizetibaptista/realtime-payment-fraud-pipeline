@@ -173,7 +173,7 @@ def main():
         "terraform_managed_schema_count": len(terraform_schemas),
     }
 
-    output = ROOT / "evidencias/v2/stage6-schema-inventory.json"
+    output = ROOT / "evidencias/schemas/stage6-schema-inventory.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n",

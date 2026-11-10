@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "schemas" / "registry"
-EVIDENCE = ROOT / "evidencias" / "v2"
+EVIDENCE = ROOT / "evidencias" / "schemas"
 
 SUBJECT = "payments.public.transactions-value"
 EXPECTED_TOPICS = (
@@ -141,7 +141,7 @@ def main():
     compatibility_evidence = {
         "evidence_type": "DERIVED_TEST_RESULT",
         "generated_at_utc": timestamp,
-        "source": "evidencias/v2/stage6-compatibility.json",
+        "source": "evidencias/schemas/stage6-compatibility.json",
         "subject": SUBJECT,
         "tested_against_version": compatibility["original_version"],
         "compatibility": "BACKWARD",

@@ -37,7 +37,7 @@ REQUIRED_ENV = (
     "CDC_PGPASSWORD",
 )
 
-EVIDENCE_DIR = ROOT / "evidencias" / "v2"
+EVIDENCE_DIR = ROOT / "evidencias" / "database"
 
 
 def main():

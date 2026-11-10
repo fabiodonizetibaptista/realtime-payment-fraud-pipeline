@@ -21,7 +21,7 @@ from audit_cdc import terraform_state
 from validate_cdc_avro import schema_registry_credentials
 
 SUBJECT = "payments.public.transactions-value"
-OUTPUT = ROOT / "evidencias/v2/stage6-compatibility.json"
+OUTPUT = ROOT / "evidencias/schemas/stage6-compatibility.json"
 
 
 def api_call(endpoint, key, secret, method, path, payload=None):

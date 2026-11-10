@@ -26,7 +26,7 @@ COUNTS = {
     "cdc_internal.heartbeat": 1,
 }
 
-OUTPUT = ROOT / "evidencias" / "v2"
+OUTPUT = ROOT / "evidencias" / "security"
 
 
 def connect(env, cdc=False):
@@ -250,7 +250,7 @@ def main():
     print("ARTIFACTS_CREATED=", len(files))
 
     for name in files:
-        print("EVIDENCE_FILE=", f"evidencias/v2/{name}")
+        print("EVIDENCE_FILE=", f"evidencias/security/{name}")
 
     print("REMOTE_CHANGES=False")
     print("SECRETS_PRINTED=False")

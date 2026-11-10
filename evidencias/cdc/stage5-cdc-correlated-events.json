@@ -3,7 +3,7 @@
   "generated_at_utc": "2026-11-04T01:21:59.678581+00:00",
   "source_files": [
     ".local/stage5-scenario.json",
-    "evidencias/v2/stage5-cdc-lifecycle.json"
+    "evidencias/cdc/stage5-cdc-lifecycle.json"
   ],
   "topic": "payments.public.transactions",
   "test_transaction_id": -1606205530698,

@@ -501,7 +501,7 @@ finally:
         from datetime import datetime, timezone
         import hashlib
 
-        directory = ROOT / "evidencias" / "etapa-9"
+        directory = ROOT / "evidencias" / "flink"
         directory.mkdir(parents=True, exist_ok=True)
 
         sql_evidence = directory / "01_temporal_join.sql"

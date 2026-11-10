@@ -57,7 +57,17 @@ def merge_env_file(path: Path, environment: MutableMapping[str, str]) -> None:
 
 
 def secret_values(values: Mapping[str, str]) -> tuple[str, ...]:
-    return tuple(values[key] for key in SECRET_ENV_KEYS if len(values.get(key, "")) >= 4)
+    """Reconhece nomes de variaveis mesmo quando o Windows os normaliza.
+
+    O Windows nao diferencia maiusculas/minusculas no ambiente; ao copiar
+    os.environ para dict, as chaves podem aparecer em maiusculas.
+    """
+    normalized = {key.casefold(): value for key, value in values.items()}
+    return tuple(
+        value
+        for key in SECRET_ENV_KEYS
+        if len(value := normalized.get(key.casefold(), "")) >= 4
+    )
 
 
 def redact_exact_secrets(text: str, secrets: Iterable[str]) -> str:

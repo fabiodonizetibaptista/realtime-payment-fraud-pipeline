@@ -91,7 +91,7 @@ def main():
     # Evidencia dedicada, sem stdout/stderr do provider ou credenciais.
     from datetime import datetime, timezone
 
-    evidence_dir = ROOT / "evidencias" / "v2"
+    evidence_dir = ROOT / "evidencias" / "cdc"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     evidence = {

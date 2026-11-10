@@ -124,7 +124,10 @@ class ToolValidationTests(unittest.TestCase):
                 lab.plan()
 
             self.assertIn("foundation.tfplan", captured["args"][-1])
-            self.assertEqual(captured["env"]["TF_VAR_foundation_kafka_api_key"], "key-id")
+            normalized_env = {
+                key.casefold(): value for key, value in captured["env"].items()
+            }
+            self.assertEqual(normalized_env["tf_var_foundation_kafka_api_key"], "key-id")
             self.assertEqual(captured["env"]["TF_LOG"], "OFF")
             self.assertIn("key-secret-value", captured["secrets"])
 

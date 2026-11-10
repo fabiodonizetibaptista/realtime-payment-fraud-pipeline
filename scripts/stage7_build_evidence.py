@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TF_DIR = ROOT / "infra" / "terraform"
-OUTPUT = ROOT / "evidencias" / "v2" / "stage7-compute-pool.json"
+OUTPUT = ROOT / "evidencias" / "flink" / "stage7-compute-pool.json"
 
 EXPECTED_NAME = "payment-fraud-v2"
 EXPECTED_ID = "lfcp-gq50o2n"
@@ -163,7 +163,7 @@ def main():
     print("OBSERVED_CURRENT_CFU=0")
     print("FINANCIAL_COST_VERIFIED=False")
     print("SQL_WORKSPACE_ACCESS_RECORDED=True")
-    print("EVIDENCE_FILE=evidencias/v2/stage7-compute-pool.json")
+    print("EVIDENCE_FILE=evidencias/flink/stage7-compute-pool.json")
     print("REMOTE_CHANGES=False")
     print("SECRETS_PRINTED=False")
     print("STAGE7_EVIDENCE_GATE=PASS")

@@ -27,7 +27,7 @@ from validate_cdc_avro import create_deserializers, decode_message
 TOPIC = "payments.public.transactions"
 BASELINE = ROOT / ".local" / "stage5-cdc-baseline.json"
 SCENARIO = ROOT / ".local" / "stage5-scenario.json"
-EVIDENCE = ROOT / "evidencias/v2/stage5-cdc-lifecycle.json"
+EVIDENCE = ROOT / "evidencias/cdc/stage5-cdc-lifecycle.json"
 
 
 def save_private(path, data):
