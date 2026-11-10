@@ -28,6 +28,30 @@ No **Linux**, siga o procedimento da sua distribuição na documentação oficia
 
 Verifique a disponibilidade de `terraform version` e `confluent version`, sem realizar login. Confirme o caminho de execução com `Get-Command confluent` no PowerShell ou `command -v confluent` em shells POSIX. Se faltarem ferramentas no `PATH`, revise a instalação e abra um novo terminal.
 
+### Recuperação guiada quando uma CLI está ausente ou abaixo do mínimo
+
+Depois de instalar Python 3.12+ e criar o `.venv`, execute **com o Python desse ambiente**:
+
+```powershell
+# Windows
+.\.venv\Scripts\python.exe -m scripts.bootstrap_local repair-tools
+```
+
+```bash
+# Linux e macOS
+.venv/bin/python -m scripts.bootstrap_local repair-tools
+```
+
+O comando consulta somente as versões locais, indica se Terraform >= 1.16 e Confluent CLI >= 4.81 estão disponíveis e imprime as ações de recuperação apropriadas ao sistema. **Não instala nada, não baixa artefatos e não faz login.** Um código de saída `1` significa dependência pendente, não falha do pipeline.
+
+**Windows:** para Confluent CLI, baixe o ZIP Windows AMD64 no [repositório oficial](https://github.com/confluentinc/cli/releases/latest), confirme arquitetura e integridade, extraia `confluent.exe` para um diretório persistente (exemplo: `C:\Tools\Confluent\`) e acrescente **o diretório**, não o arquivo, ao `PATH` do usuário pelas configurações de Variáveis de Ambiente. Use a mesma abordagem com o executável do Terraform baixado do [site oficial](https://developer.hashicorp.com/terraform/install), se necessário. Abra outro PowerShell, use `Get-Command confluent` e `Get-Command terraform` e execute novamente o diagnóstico. Não copie binários para dentro do `.venv`.
+
+**macOS:** use os comandos Homebrew documentados acima, ou baixe os binários oficiais para a arquitetura correspondente (Apple Silicon ou Intel). Confirme com `command -v terraform` e `command -v confluent` e com os respectivos comandos de versão.
+
+**Linux:** para Debian/Ubuntu, a Confluent disponibiliza um [repositório APT oficial](https://docs.confluent.io/confluent-cli/current/install.html); outras distribuições podem seguir o método YUM/DNF ou binários oficiais. A instalação do Terraform depende da distribuição: consulte o repositório oficial HashiCorp. Confira arquiteturas, versões e `PATH` com `command -v`.
+
+Se o diagnóstico detectar uma versão inferior ao mínimo, atualize pelo fornecedor; **não altere os requisitos de versão para contornar a falha**. Execute `python -m scripts.check_environment` depois da recuperação. Estas instruções não substituem a configuração de contas e credenciais externas.
+
 ## 3. Configuração local, sem publicar segredos
 
 Na raiz do projeto:

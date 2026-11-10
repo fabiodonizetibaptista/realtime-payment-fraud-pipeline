@@ -2,6 +2,8 @@
 import argparse
 import os
 import platform
+
+from scripts import check_environment
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,6 +42,45 @@ def instructions(system: str) -> str:
     )
 
 
+
+def repair_tools(system: str | None = None) -> bool:
+    """Diagnostico de recuperacao: nao instala, altera PATH ou acessa rede.
+
+    A verificaçao usa o mesmo parser/limites do preflight para nao divergir
+    em ambientes Windows, Linux ou macOS.
+    """
+    system = system or platform.system()
+    print("=== TOOL RECOVERY (READ ONLY) ===")
+    print(f"OS={system}")
+    status = {}
+    for name, executable, args, field, minimum in (
+        ("TERRAFORM", "terraform", ["version", "-json"], "terraform_version", check_environment.MIN_TERRAFORM),
+        ("CONFLUENT_CLI", "confluent", ["version"], None, check_environment.MIN_CONFLUENT),
+    ):
+        found = check_environment.tool_version(executable, args, field)
+        status[name] = check_environment.check_status(found, minimum)
+        print(f"{name}_STATUS={status[name]}")
+        print(f"{name}_MIN_VERSION={'.'.join(map(str, minimum))}")
+    print("CLOUD_CALLS=False")
+    print("INSTALLATION_PERFORMED=False")
+    print("CREDENTIAL_VALUES_PRINTED=False")
+    print("NEXT_ACTIONS_BEGIN")
+    if all(value == "OK" for value in status.values()):
+        print("Todas as CLIs atendem aos minimos; execute python -m scripts.check_environment")
+    else:
+        print(instructions(system))
+        if system == 'Windows':
+            print('Windows: localize executaveis com Get-Command terraform,confluent -ErrorAction SilentlyContinue')
+            print('Windows: se ja instalados, adicione as pastas dos executaveis ao PATH do usuario em Configuracoes > Variaveis de Ambiente e abra novo terminal.')
+            print('Windows: confirme com Get-Command terraform e Get-Command confluent; nao adicione arquivos individuais ao PATH.')
+        elif system in ('Darwin', 'Linux'):
+            print('macOS/Linux: localize executaveis com command -v terraform; command -v confluent')
+            print('macOS/Linux: configure PATH para conter os DIRETORIOS de instalacao e abra novo terminal.')
+        print('Reexecute: python -m scripts.bootstrap_local repair-tools')
+    print("NEXT_ACTIONS_END")
+    return all(value == "OK" for value in status.values())
+
+
 def init_env(root: Path = ROOT) -> bool:
     """Copia modelo sem sobrescrever .env; nao mostra conteudos ou segredos."""
     source, dest = root / '.env.example', root / '.env'
@@ -63,11 +104,13 @@ def init_env(root: Path = ROOT) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('instructions', 'init-env'), nargs='?', default='instructions')
+    parser.add_argument('action', choices=('instructions', 'init-env', 'repair-tools'), nargs='?', default='instructions')
     args = parser.parse_args(argv)
     if args.action == 'instructions':
         print(instructions(platform.system()))
         return 0
+    if args.action == 'repair-tools':
+        return 0 if repair_tools() else 1
     try:
         init_env()
     except (OSError, RuntimeError):

@@ -5,6 +5,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 from scripts import bootstrap_local as mod
 
 
@@ -16,6 +17,33 @@ class BootstrapLocalTests(unittest.TestCase):
                 self.assertIn(term, guidance)
                 self.assertIn('check_environment', guidance)
                 self.assertIn('init-env', guidance)
+
+    def test_repair_tools_missing_only_provides_safe_instructions(self):
+        output = io.StringIO()
+        with patch.object(mod.check_environment, 'tool_version', return_value=None), contextlib.redirect_stdout(output):
+            self.assertFalse(mod.repair_tools('Windows'))
+        result = output.getvalue()
+        self.assertIn('CONFLUENT_CLI_STATUS=MISSING_OR_UNAVAILABLE', result)
+        self.assertIn('TERRAFORM_STATUS=MISSING_OR_UNAVAILABLE', result)
+        self.assertIn('Get-Command', result)
+        self.assertIn('INSTALLATION_PERFORMED=False', result)
+        self.assertIn('CLOUD_CALLS=False', result)
+
+    def test_repair_tools_versions_below_minimum(self):
+        output = io.StringIO()
+        with patch.object(mod.check_environment, 'tool_version', return_value=(1, 0, 0)), contextlib.redirect_stdout(output):
+            self.assertFalse(mod.repair_tools('Linux'))
+        self.assertIn('BELOW_MINIMUM', output.getvalue())
+        self.assertIn('command -v', output.getvalue())
+
+    def test_repair_tools_valid_versions(self):
+        output = io.StringIO()
+        versions = [(1, 16, 2), (4, 81, 0)]
+        with patch.object(mod.check_environment, 'tool_version', side_effect=versions), contextlib.redirect_stdout(output):
+            self.assertTrue(mod.repair_tools('Darwin'))
+        self.assertIn('TERRAFORM_STATUS=OK', output.getvalue())
+        self.assertIn('CONFLUENT_CLI_STATUS=OK', output.getvalue())
+        self.assertNotIn('Reexecute:', output.getvalue())
 
     def test_create_without_printing_contents(self):
         with tempfile.TemporaryDirectory() as tmp:

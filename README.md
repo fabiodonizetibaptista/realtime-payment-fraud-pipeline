@@ -70,6 +70,8 @@ Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py
 python -m scripts.bootstrap_local init-env
 ```
 
+**Ferramenta ausente ou fora do `PATH`?** Execute `python -m scripts.bootstrap_local repair-tools` com o Python do seu `.venv`; o comando identifica versões ausentes/incompatíveis e indica como recuperar Terraform e Confluent CLI em cada sistema. Não altera seu computador. Consulte [recuperação multiplataforma](docs/local-bootstrap.md#recuperação-guiada-quando-uma-cli-está-ausente-ou-abaixo-do-mínimo).
+
 Antes de provisionar, valide os nomes de configuracao presentes com `python -m scripts.check_configuration foundation`; depois da Foundation use `python -m scripts.check_configuration pipeline`. Diagnosticos adicionais: `postgres` e `cdc`. Nenhum desses comandos acessa a nuvem ou imprime credenciais.
 
 A criacao nao preenche credenciais, e o arquivo `.env` deve permanecer fora do controle de versao. Consulte [o guia de bootstrap multiplataforma](docs/local-bootstrap.md).
