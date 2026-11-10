@@ -5,11 +5,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = (
-    "scripts/stage6_apply_subject_policy.py",
-    "scripts/stage6_build_evidence.py",
-    "scripts/stage7_build_evidence.py",
-    "scripts/stage8_describe_accounts.py",
-    "scripts/stage8_show_databases.py",
+    "scripts/apply_schema_compatibility_policy.py",
+    "scripts/collect_schema_evidence.py",
+    "scripts/collect_flink_pool_evidence.py",
+    "scripts/inspect_flink_accounts.py",
+    "scripts/inspect_flink_databases.py",
     "scripts/etapa-9/validar_materializacao.py",
 )
 

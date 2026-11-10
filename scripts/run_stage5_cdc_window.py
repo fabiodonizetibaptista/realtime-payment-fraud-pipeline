@@ -160,7 +160,7 @@ def check():
         "scripts/plan_cdc_connector.py",
         "scripts/apply_cdc_connector.py",
         "scripts/teardown_cdc_connector.py",
-        "scripts/stage5_cdc_scenario.py",
+        "scripts/cdc_test_scenario.py",
         "src/consumer/verify_cdc_lifecycle.py",
         "src/consumer/validate_cdc_avro.py",
         "infra/terraform/cdc-connector.tf",
@@ -231,7 +231,7 @@ def execute():
         print("CONNECTOR_RUNNING_GATE=PASS", flush=True)
 
         if not run_script(
-            "scripts/stage5_cdc_scenario.py", "--execute"
+            "scripts/cdc_test_scenario.py", "--execute"
         ):
             raise RuntimeError("SCENARIO_EXECUTION_FAILED")
 

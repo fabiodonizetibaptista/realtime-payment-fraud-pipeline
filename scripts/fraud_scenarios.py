@@ -14,7 +14,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from scripts.stage5_cdc_scenario import connect, connector_in_state
+from scripts.cdc_test_scenario import connect, connector_in_state
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / ".local" / "etapa12-scenarios.json"

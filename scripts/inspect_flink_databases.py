@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 
 from safety import load_env_file
-from stage8_describe_accounts import request, state_resource
+from inspect_flink_accounts import request, state_resource
 
 ROOT = Path(__file__).resolve().parents[1]
 TF = ROOT / "infra/terraform"
