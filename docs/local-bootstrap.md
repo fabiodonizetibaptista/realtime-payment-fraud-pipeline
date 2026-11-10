@@ -46,3 +46,27 @@ Preencha os parâmetros e segredos **por conta própria** conforme o guia de imp
 Use o Python do seu venv para `python -m scripts.check_environment` e `python lab.py test`. O verificador é somente leitura: não consulta nuvem, não valida permissões dos provedores e não confirma CDC/Flink. Um `READY=False` indica dependências locais ausentes; use as orientações do bootstrap. Depois, `python lab.py setup` executa `terraform init` e `terraform validate`, podendo baixar providers, mas não cria recursos em nuvem.
 
 **Não execute `plan`, `apply`, conectores ou `start` até configurar contas Aiven e Confluent Cloud, validar custos e compreender as confirmações de cada fase.** Consulte [Implantação](deployment.md) para o fluxo Foundation -> configuração -> pipeline.
+
+## 5. Diagnostico local por fase (sem acesso a nuvem)
+
+Depois de criar o `.env`, execute **somente a fase correspondente**:
+
+```text
+python -m scripts.check_configuration foundation
+python -m scripts.check_configuration pipeline
+python -m scripts.check_configuration postgres
+python -m scripts.check_configuration cdc
+```
+
+- `foundation`: requer credenciais administrativas Aiven/Confluent e projeto Aiven, **nao** requer outputs da Foundation ainda nao criada.
+- `pipeline`: requer os outputs `TF_VAR_foundation_*`, gerados apos o `apply` da Foundation por `python -m scripts.export_foundation_env`.
+- `postgres`: requer credenciais de conexao e caminho `PG_CA` do PostgreSQL provisionado.
+- `cdc`: requer adicionalmente `CDC_PGUSER`, `CDC_PGPASSWORD` e senha do conector.
+
+O diagnostico mostra apenas **nomes** das chaves ausentes, nunca os valores.
+`CONFIG_STATUS=PRESENT_NOT_VERIFIED` significa unicamente presenca local,
+**nao** autenticacao, autorizacao, conectividade nem funcionamento dos servicos.
+O verificador nao testa a existencia do arquivo CA ou permissões remotas;
+use o preflight PostgreSQL especifico depois de provisionar o banco.
+No Windows e em outros ambientes, cada clone deve ter seu proprio `.env` local
+(ou segredos de ambiente), sem copiar o arquivo ao Git.
