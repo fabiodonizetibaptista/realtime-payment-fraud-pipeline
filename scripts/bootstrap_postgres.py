@@ -1,8 +1,8 @@
-"""Etapa 2: aplicar DDL/seed originais da V1 e conferir o banco da V2.
+"""Prepara e valida o PostgreSQL de origem para o pipeline CDC.
 
 Uso:
-  python scripts/database_stage2.py check       # somente leitura
-  python scripts/database_stage2.py apply       # altera banco: DDL e seed
+  python scripts/bootstrap_postgres.py check       # somente leitura
+  python scripts/bootstrap_postgres.py apply       # altera banco: DDL e seed
 
 Credenciais: .env na raiz do projeto; nunca imprime valores confidenciais.
 """
@@ -44,8 +44,8 @@ def read_local_env():
 
 def connect():
     stored = read_local_env()
-    # A V2 usa as credenciais exportadas de seu proprio Terraform State,
-    # evitando host hardcoded e dependencia de dados da V1.
+    # Usa credenciais exportadas dos recursos gerenciados,
+    # evitando hosts e senhas fixos no codigo.
     keys = ("PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD")
     if not all(stored.get(k) for k in keys):
         raise RuntimeError("POSTGRES_ENV_INCOMPLETE")
@@ -96,7 +96,7 @@ def check(conn):
 
 
 def apply(conn):
-    # SQL da V1 ja contem BEGIN/COMMIT e comandos IF NOT EXISTS/ON CONFLICT.
+    # O SQL versionado ja contem BEGIN/COMMIT e operacoes idempotentes.
     # Desabilitar implicit transactions evita interferencia do driver com BEGIN.
     conn.autocommit = True
     for label, path in (("SCHEMA", SCHEMA), ("SEED", SEED)):

@@ -1,4 +1,4 @@
-"""Etapa 3: evidencias de volume e autenticacao CDC.
+"""Coleta evidencias de volume e autenticacao CDC.
 
 Somente leitura no PostgreSQL e Terraform State.
 Nenhuma senha, chave ou identificador sensivel e impresso.

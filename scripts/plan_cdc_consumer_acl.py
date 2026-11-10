@@ -28,7 +28,7 @@ def run(*args, env):
 
 
 def main():
-    print("========== ETAPA 5 — PLAN ACL CONSUMER ==========")
+    print("========== PLAN CDC CONSUMER ACL ==========")
 
     config = load_env_file(ROOT / ".env")
     env = dict(os.environ)

@@ -1,4 +1,4 @@
-"""Etapa 9: valida resultado real do Temporal Join.
+"""Valida o resultado do Temporal Join usando a CLI do Flink.
 
 Utiliza apenas o SQL original e a CLI autenticada.
 Cria e remove somente recursos temporarios com nome exclusivo.

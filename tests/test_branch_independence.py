@@ -10,7 +10,7 @@ SCRIPTS = (
     "scripts/collect_flink_pool_evidence.py",
     "scripts/inspect_flink_accounts.py",
     "scripts/inspect_flink_databases.py",
-    "scripts/etapa-9/validar_materializacao.py",
+    "scripts/validate_temporal_join.py",
 )
 
 

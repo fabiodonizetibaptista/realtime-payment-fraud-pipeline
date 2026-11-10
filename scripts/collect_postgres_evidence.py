@@ -1,6 +1,6 @@
-"""Etapa 2: evidencias sanitizadas e reproduziveis do PostgreSQL.
+"""Coleta evidencias sanitizadas e reproduziveis do PostgreSQL.
 
-Somente leitura. Reutiliza o preflight da V2.
+Somente leitura. Reutiliza o preflight PostgreSQL existente.
 Nao altera banco, Terraform, slots, dados ou credenciais.
 """
 
