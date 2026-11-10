@@ -84,3 +84,14 @@ git switch -c fix/reproduction-readiness
 ```
 
 Copiar este arquivo para `docs/audits/reproduction-readiness-backlog.md`, adicioná-lo, fazer commit e publicar a nova branch. Confirmar a ausência de branch preexistente antes de usar `switch -c`. Não criar PR nem fazer merge ainda.
+
+## Checkpoint — L18/L19
+
+- Status: IMPLEMENTADAS E VALIDADAS LOCALMENTE.
+- Commit de implementação: 9562d4b95c896e3df71d8b9a3c473862a472e690
+- Branch: fix/foundation-plan-l18
+- L18: planejamento Foundation ajustado para respeitar a allowlist.
+- L19: diagnóstico de divergência aprimorado.
+- Testes automatizados: aprovados no ambiente Windows.
+- Validação operacional em ambiente limpo: PENDENTE.
+- Provisionamento remoto durante a correção: NÃO EXECUTADO.
