@@ -34,6 +34,20 @@ class PlanReviewTests(unittest.TestCase):
         ]})
         self.assertEqual(result["update"], 1)
 
+    def test_ignores_terraform_data_source_read(self):
+        data_source = resource("data.confluent_organization.current", ("read",), "confluent_organization")
+        data_source["mode"] = "data"
+        result = review_plan({"resource_changes": [data_source]})
+        self.assertEqual(result["create"], 0)
+        self.assertEqual(result["update"], 0)
+        self.assertEqual(result["resources"], [])
+
+    def test_rejects_data_source_write(self):
+        data_source = resource("data.confluent_organization.current", ("update",), "confluent_organization")
+        data_source["mode"] = "data"
+        with self.assertRaisesRegex(ValueError, "UNSAFE_DATA_SOURCE_ACTION"):
+            review_plan({"resource_changes": [data_source]})
+
     def test_rejects_destroy(self):
         with self.assertRaisesRegex(ValueError, "UNSAFE_ACTION"):
             review_plan({"resource_changes": [

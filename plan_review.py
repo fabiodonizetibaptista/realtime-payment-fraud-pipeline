@@ -44,7 +44,7 @@ def review_plan(plan: Mapping) -> dict:
             not isinstance(address, str)
             or not address
             or not isinstance(resource_type, str)
-            or mode != "managed"
+            or mode not in ("managed", "data")
             or not isinstance(change, Mapping)
             or address in seen
         ):
@@ -57,6 +57,13 @@ def review_plan(plan: Mapping) -> dict:
             raise ValueError("PLAN_REJECTED=INVALID_ACTIONS")
 
         action_tuple = tuple(actions)
+
+        # Data sources may appear in Terraform plan JSON with mode="data".
+        # They are read-only: never count them as managed-resource changes.
+        if mode == "data":
+            if action_tuple not in {("read",), ("no-op",)}:
+                raise ValueError("PLAN_REJECTED=UNSAFE_DATA_SOURCE_ACTION")
+            continue
 
         if action_tuple in {("no-op",), ("read",)}:
             continue

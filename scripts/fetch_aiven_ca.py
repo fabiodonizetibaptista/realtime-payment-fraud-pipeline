@@ -5,6 +5,7 @@ Nunca imprime token, certificado ou resposta bruta da API.
 """
 
 import json
+import re
 import os
 import ssl
 import sys
@@ -17,23 +18,34 @@ sys.path.insert(0, str(ROOT))
 
 from safety import load_env_file
 
-PROJECT = "fabiodonizetibaptista-1c3d"
 TARGET = ROOT / ".local" / "aiven-ca.pem"
 
 
 def main():
     env = load_env_file(ROOT / ".env")
-    token = env.get("AIVEN_TOKEN") or os.environ.get("AIVEN_TOKEN")
+    # An explicit environment variable wins over the local .env file.
+    token = os.environ.get("AIVEN_TOKEN") or env.get("AIVEN_TOKEN")
+    project = os.environ.get("TF_VAR_aiven_project") or env.get("TF_VAR_aiven_project")
 
     print("========== ETAPA 4 — CERTIFICADO AIVEN ==========")
     print("AIVEN_TOKEN_AVAILABLE=", bool(token))
 
-    if not token:
+    if not token or not project:
+        print("MISSING_KEYS=" + ",".join(
+            key for key, value in (("AIVEN_TOKEN", token), ("TF_VAR_aiven_project", project))
+            if not value
+        ))
+        print("CA_GATE=BLOCKED")
+        return 1
+    # Reject unexpected URL path characters instead of constructing a request
+    # to a different endpoint from an untrusted configuration value.
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]*", project):
+        print("INVALID_PROJECT_NAME=True")
         print("CA_GATE=BLOCKED")
         return 1
 
     request = urllib.request.Request(
-        f"https://api.aiven.io/v1/project/{PROJECT}/kms/ca",
+        f"https://api.aiven.io/v1/project/{project}/kms/ca",
         headers={
             "Authorization": f"aivenv1 {token}",
             "Accept": "application/json",
@@ -85,7 +97,10 @@ def main():
             delete=False,
         ) as file:
             temp = Path(file.name)
-            os.fchmod(file.fileno(), 0o600)
+            # fchmod is not provided on Windows; use POSIX permissions only
+            # where supported. Windows inherits the directory's ACL.
+            if os.name == "posix":
+                os.fchmod(file.fileno(), 0o600)
             file.write(certificate)
 
         os.replace(temp, TARGET)

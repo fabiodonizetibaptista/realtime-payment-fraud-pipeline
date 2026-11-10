@@ -101,10 +101,10 @@ def setup() -> None:
     """Marco 1: prepara somente o ambiente local; nao executa plan/apply."""
     # Codespaces Secrets ja chegam no ambiente. O .env e opcional e nunca
     # pode apagar ou substituir valores definidos pelo ambiente de execucao.
-    merge_env_file(ENV_FILE, os.environ)
-    secrets = secret_values(os.environ)
-    _check_versions()
     execution_env = dict(os.environ)
+    merge_env_file(ENV_FILE, execution_env)
+    secrets = secret_values(execution_env)
+    _check_versions()
     # Prevent inherited Terraform debug logging from exposing provider payloads.
     execution_env["TF_LOG"] = "OFF"
     run_command(["terraform", "init", "-lockfile=readonly"],
@@ -119,8 +119,8 @@ def setup() -> None:
 
 def plan() -> None:
     """Gera um plano local revisavel; nao cria nem altera recursos remotos."""
-    merge_env_file(ENV_FILE, os.environ)
     execution_env = dict(os.environ)
+    merge_env_file(ENV_FILE, execution_env)
     execution_env["TF_LOG"] = "OFF"
     secrets = secret_values(execution_env)
     # Bootstrap em duas fases: o primeiro plano deve conter apenas os 14
@@ -195,8 +195,8 @@ def apply_foundation(confirm: bool = False) -> None:
             "Plano foundation.tfplan ausente. Execute python lab.py plan."
         )
 
-    merge_env_file(ENV_FILE, os.environ)
     execution_env = dict(os.environ)
+    merge_env_file(ENV_FILE, execution_env)
     execution_env["TF_LOG"] = "OFF"
     execution_env["TF_INPUT"] = "0"
     secrets = secret_values(execution_env)
@@ -266,9 +266,8 @@ def plan_pipeline() -> None:
     O plano binario pode conter segredos, portanto nunca deve ser
     versionado, exibido ou copiado para logs.
     """
-    merge_env_file(ENV_FILE, os.environ)
-
     execution_env = dict(os.environ)
+    merge_env_file(ENV_FILE, execution_env)
     execution_env["TF_LOG"] = "OFF"
     execution_env["TF_INPUT"] = "0"
 
@@ -317,8 +316,8 @@ def review_saved_plan(pipeline: bool = False) -> dict:
 
     # O plano pode conter credenciais e atributos sensiveis.
     # Toda a leitura ocorre em memoria; nunca imprimir o JSON.
-    merge_env_file(ENV_FILE, os.environ)
     execution_env = dict(os.environ)
+    merge_env_file(ENV_FILE, execution_env)
     execution_env["TF_LOG"] = "OFF"
     execution_env["TF_INPUT"] = "0"
 
@@ -362,8 +361,8 @@ def apply_pipeline(confirm: bool = False, allow_cdc: bool = False) -> None:
     if not plan_path.is_file():
         raise RuntimeError("PIPELINE_APPLY_BLOCKED=PLAN_NOT_FOUND")
 
-    merge_env_file(ENV_FILE, os.environ)
     execution_env = dict(os.environ)
+    merge_env_file(ENV_FILE, execution_env)
     execution_env["TF_LOG"] = "OFF"
     execution_env["TF_INPUT"] = "0"
 
@@ -453,9 +452,8 @@ def teardown(confirm: bool = False) -> None:
     if not confirm:
         raise RuntimeError("TEARDOWN_BLOCKED=CONFIRMATION_REQUIRED")
 
-    merge_env_file(ENV_FILE, os.environ)
-
     env = dict(os.environ)
+    merge_env_file(ENV_FILE, env)
     env["TF_LOG"] = "OFF"
     env["TF_INPUT"] = "0"
 
