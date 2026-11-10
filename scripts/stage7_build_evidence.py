@@ -39,17 +39,8 @@ def get_resource(state, resource_type, name):
 def main():
     print("========== ETAPA 7 — REGISTRO DE EVIDENCIAS ==========")
 
-    branch = subprocess.run(
-        ["git", "branch", "--show-current"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    if branch.returncode != 0 or branch.stdout.strip() != "etapa-7":
-        fail("WRONG_BRANCH")
-
+    # O acesso ao Terraform State e os checks de unicidade
+    # continuam protegendo a coleta em qualquer branch.
     if OUTPUT.exists():
         fail("EVIDENCE_ALREADY_EXISTS")
 

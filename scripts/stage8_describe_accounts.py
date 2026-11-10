@@ -264,17 +264,8 @@ def state_resource(state, kind, name):
 def main():
     print("========== ETAPA 8 — DESCRIBE ACCOUNTS ==========")
 
-    branch = subprocess.run(
-        ["git", "branch", "--show-current"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    if branch.stdout.strip() != "etapa-8":
-        fail("WRONG_BRANCH")
-
+    # Preflights de credenciais e recursos substituem a trava
+    # historica de branch, que impedia a execucao na main.
     env = dict(os.environ)
     for name, value in load_env_file(ROOT / ".env").items():
         if value and not env.get(name):

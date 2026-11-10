@@ -84,10 +84,8 @@ def diagnose(result):
 
 print("========== ETAPA 9 — TEMPORAL JOIN REAL DATA ==========")
 
-branch = run(["git", "branch", "--show-current"], timeout=10)
-if branch is None or branch.stdout.strip() != "etapa-9":
-    raise SystemExit("BLOCKED_WRONG_BRANCH")
-
+# A consulta permanece condicionada aos preflights de SQL,
+# Terraform State e autenticacao, nao a uma branch historica.
 if not SQL.is_file():
     raise SystemExit("BLOCKED_ORIGINAL_SQL_MISSING")
 

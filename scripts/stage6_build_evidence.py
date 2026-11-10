@@ -9,7 +9,6 @@ Nenhum schema completo, segredo ou dado pessoal e registrado.
 """
 
 import json
-import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,17 +46,8 @@ def write_new(path, data):
 def main():
     print("========== ETAPA 6 — EVIDENCIAS ==========")
 
-    branch = subprocess.run(
-        ["git", "branch", "--show-current"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    ).stdout.strip()
-
-    if branch != "etapa-6":
-        raise RuntimeError("WRONG_BRANCH")
-
+    # Evidencias sao validadas pelo contrato dos arquivos,
+    # independentemente da branch de desenvolvimento.
     manifest = read_json(SCHEMAS / "manifest.json")
     compatibility = read_json(
         EVIDENCE / "stage6-compatibility.json"

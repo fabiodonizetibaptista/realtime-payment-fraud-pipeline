@@ -36,17 +36,8 @@ def terraform(env, *args):
 def main():
     print("========== ETAPA 6 — APPLY SUBJECT POLICY ==========")
 
-    branch = subprocess.run(
-        ["git", "branch", "--show-current"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    if branch.returncode != 0 or branch.stdout.strip() != "etapa-6":
-        raise RuntimeError("WRONG_BRANCH")
-
+    # A seguranca do apply depende do plano Terraform aprovado,
+    # nao do nome da branch Git utilizada pelo operador.
     if not PLAN.is_file():
         raise RuntimeError("APPROVED_PLAN_NOT_FOUND")
 

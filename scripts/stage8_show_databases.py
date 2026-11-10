@@ -25,9 +25,8 @@ def run(cmd, cwd=ROOT):
         cmd, cwd=cwd, capture_output=True, text=True, check=False
     )
 
-if run(["git", "branch", "--show-current"]).stdout.strip() != "etapa-8":
-    fail("WRONG_BRANCH")
-
+# Os preflights abaixo validam recursos e autorizacao sem
+# condicionar a inspecao ao nome da branch Git.
 result = run(["terraform", "state", "pull"], TF)
 if result.returncode != 0:
     fail("STATE_UNAVAILABLE")
