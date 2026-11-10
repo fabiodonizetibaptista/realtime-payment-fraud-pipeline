@@ -1,12 +1,11 @@
-# Etapa 12 — Evidências de cenários e alertas
+# Validação — Cenários sintéticos e alertas
 
 ## 1. Identificação da execução
 
-- Branch: etapa-12
 - Commit executado: PENDENTE
 - Data da execução: PENDENTE
 - Ambiente: PENDENTE
-- Status: AGUARDANDO EXECUÇÃO INTEGRAL
+- Status: VALIDAÇÃO REMOTA NÃO COMPROVADA
 
 ## 2. Comandos e registros de teste
 
@@ -24,8 +23,8 @@ Execução real, somente após autorização:
 python3 -m scripts.fraud_scenarios execute --confirm-execute
 ```
 
-O manifesto privado `.local/etapa12-scenarios.json`
-mantém os IDs sintéticos usados no teste.
+O manifesto privado `.local/etapa12-scenarios.json` (nome técnico
+mantido para compatibilidade com o script) contém os IDs sintéticos usados no teste.
 
 - [ ] Manifesto criado
 - [ ] Quatro transações inseridas
@@ -57,7 +56,7 @@ SQL de inspeção:
 `sql/fraud_detection/continuous/02_inspect_matches.sql`
 
 Contrato:
-`docs/etapa-12/contrato_alertas.md`
+`docs/alert-contract.md`
 
 Campos esperados:
 
@@ -111,18 +110,7 @@ SQL:
 A ausência inicial de correspondências não significa,
 isoladamente, falha de compilação ou processamento.
 
-## 7. Destino citado pelo instrutor
-
-A transcrição menciona um termo semelhante a "CPL",
-sem identificação suficientemente confiável.
-
-- Destino implementado: fraud.pattern_matches
-- Destino original do instrutor: NÃO CONFIRMADO
-- Validação no material SQL/configuração: PENDENTE
-
-Não declarar equivalência sem evidência.
-
-## 8. Gate final
+## 7. Gate final
 
 - [ ] Cenário legítimo sem alerta indevido
 - [ ] Cenário fraudulento identificado

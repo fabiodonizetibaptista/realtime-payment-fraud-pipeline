@@ -1,4 +1,4 @@
-# Etapa 12 — Contrato de alertas e watermark
+# Contrato de alertas e watermark
 
 ## Destino
 
@@ -54,7 +54,7 @@ Os tipos finais devem ser confirmados com DESCRIBE no Flink.
 - Intervalo máximo de 60 segundos
 - AFTER MATCH SKIP PAST LAST ROW
 
-SQL original:
+SQL da regra:
 `sql/fraud_detection/pattern/01_match_recognize.sql`
 
 ## Watermark

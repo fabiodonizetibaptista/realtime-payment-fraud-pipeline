@@ -1,4 +1,4 @@
-# Etapa 13 — Evidências de observabilidade, segurança e custos
+# Evidências — Observabilidade, segurança e custos
 
 ## 1. Contexto
 

@@ -1,6 +1,6 @@
 # Requisitos e critérios de aceite
 
-Este documento sintetiza os requisitos do desafio de pipeline de pagamentos em tempo real. A referência de avaliação é **o comportamento demonstrado do pipeline**, não a sequência histórica de desenvolvimento nem os nomes dos recursos usados no exemplo do instrutor.
+Este documento sintetiza os requisitos do desafio de pipeline de pagamentos em tempo real. A referência de avaliação é **o comportamento demonstrado do pipeline**, não a sequência histórica de desenvolvimento nem os nomes dos recursos usados nos exemplos de referência.
 
 ## Objetivo
 
@@ -28,7 +28,7 @@ Construir e documentar um fluxo reproduzível de pagamentos sintéticos: **Postg
 ## Delimitação de escopo
 
 - **Requisitos:** os itens acima são derivados da descrição e das cinco camadas do desafio.
-- **Exemplos, não imposições:** nomes exatos de contas, tópicos, serviços, provedores PostgreSQL e scripts presentes no material de referência do instrutor podem ser substituídos por implementações equivalentes, desde que o comportamento seja demonstrado.
+- **Exemplos, não imposições:** nomes exatos de contas, tópicos, serviços, provedores PostgreSQL e scripts presentes no material de referência de referência podem ser substituídos por implementações equivalentes, desde que o comportamento seja demonstrado.
 - **Evoluções opcionais:** regras adicionais de fraude, dead-letter queue, Iceberg/Tableflow, modelos de IA e mudança de domínio não são pré-requisitos para o fluxo central.
 - **Limitação importante:** a presença de código, testes locais ou parecer de auditoria não substitui a evidência de execução integrada no ambiente remoto.
 

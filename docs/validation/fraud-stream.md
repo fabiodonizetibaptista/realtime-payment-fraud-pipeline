@@ -1,8 +1,7 @@
-# Etapa 11 — Execução contínua e inspeção
+# Validação — Processamento contínuo e inspeção
 
 ## 1. Identificação
 
-- Branch: etapa-11
 - Commit executado: PENDENTE
 - Data da execução: PENDENTE
 - Ambiente: PENDENTE
@@ -12,7 +11,7 @@
 SQL:
 `sql/fraud_detection/continuous/01_continuous_matches.sql`
 
-Statement:
+Statement configurado (identificador técnico preservado por compatibilidade):
 `etapa11-fraud-pattern-matches`
 
 - [ ] Statement submetido
@@ -43,7 +42,7 @@ Não registrar IDs reais de cartões ou dados financeiros.
 
 ## 4. Tratamento de card_id nulo
 
-A regra da Etapa 10 utiliza:
+A regra de detecção utiliza:
 
 `WHERE t.card_id IS NOT NULL`
 

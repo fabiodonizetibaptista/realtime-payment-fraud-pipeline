@@ -1,10 +1,10 @@
-# Etapa 8 — Evidências e critérios de conclusão
+# Evidências — Metadados Flink da tabela de contas
 
 ## Ambiente
 
 - Environment: `desafio-final`
 - Kafka Cluster: `desafio-basic` (Basic)
-- Compute Pool: `payment-fraud-v2`
+- Compute Pool: `payment-fraud-v2` (identificador observado do recurso remoto)
 - Tabela: `payments.public.accounts`
 
 ## Evidências funcionais
@@ -30,9 +30,11 @@
 
 ## Reprodutibilidade
 
-A definição SQL está registrada, mas sua aplicação automática em uma recriação limpa ainda não foi implementada nem validada. O Terraform gerencia a infraestrutura e as permissões; o DDL requer uma etapa operacional própria.
+O Terraform gerencia a infraestrutura e as permissões. A configuração de
+metadados Flink agora possui o procedimento `scripts/flink_setup.py`; a
+existência do script não comprova sua execução em uma instalação limpa.
 
-## Fechamento formal da Etapa 8
+## Registro de validação no SQL Workspace
 
 ### Evidencias do SQL Workspace
 
@@ -45,7 +47,7 @@ A definição SQL está registrada, mas sua aplicação automática em uma recri
 
 O usuario informou que a primeira execucao do ALTER TABLE
 foi bem-sucedida. O registro historico dessa execucao
-nao foi recuperado nesta etapa.
+nao foi recuperado no registro historico.
 
 Uma tentativa posterior de executar novamente o mesmo DDL
 foi rejeitada porque a tabela ja possuia a chave primaria
@@ -74,12 +76,12 @@ arquivo ao repositorio.
 O SQL DDL esta registrado em
 `sql/enrichment/accounts_primary_key.sql`.
 
-A aplicacao automatica desse DDL em uma recriacao limpa
-ainda nao foi implementada nem validada. O script SQL
-nao deve ser repetido caso a chave primaria ja exista.
+O modulo `scripts/flink_setup.py` implementa preflight e aplicacao controlada.
+Esta observacao historica nao comprova uma nova execucao do modulo.
+O SQL nao deve ser repetido caso a chave primaria ja exista.
 
 ### Resultado
 
-Etapa 8 concluida funcionalmente, com ressalva
-documental sobre o historico da primeira execucao
-e pendencia explicita de automacao do DDL.
+Os metadados foram observados no SQL Workspace na execucao registrada.
+A aplicacao em ambiente novo depende da verificacao operacional por
+`scripts/flink_setup.py`, sem presumir que houve nova execucao.

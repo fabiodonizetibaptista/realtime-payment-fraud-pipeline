@@ -65,7 +65,7 @@ def main():
         return 1
 
     # Confirmar a divergencia ja documentada, sem alterar o seed.
-    decision = ROOT / "docs/etapa-3-volume-autenticacao.md"
+    decision = ROOT / "docs/decisions/postgres-cdc.md"
     documented = (
         decision.is_file()
         and "DECISAO_MERCHANTS=60" in decision.read_text(

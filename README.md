@@ -4,7 +4,7 @@ Pipeline de processamento de pagamentos em tempo real, com captura de alteraçõ
 
 O projeto demonstra como integrar serviços gerenciados de banco de dados, mensageria e processamento de eventos utilizando **infraestrutura como código**, contratos de dados e consultas SQL contínuas.
 
-Os [requisitos e critérios de aceite](docs/requirements.md) resumem o escopo exigido para a entrega e distinguem implementações de evidências de execução.
+A [documentação técnica](docs/README.md) reúne requisitos, decisões arquiteturais, contratos e evidências, distinguindo implementação de validação em nuvem.
 
 ## Visão geral
 
@@ -209,7 +209,7 @@ Substitua as datas pelo período de interesse. A data final é exclusiva na cons
 
 O projeto inclui um coletor de evidências em `scripts/collect_operations_evidence.py`. A coleta separa o contexto de ambiente e produz um resumo local sanitizado de inventário, ACLs e billing. Consulte sua interface para os parâmetros aceitos e mantenha a exportação fora do controle de versão. O resultado deve ser conferido contra a conta e o período selecionados antes de ser utilizado como evidência formal.
 
-Os documentos em `docs/` registram contratos analíticos, critérios de validação e evidências das etapas de processamento.
+Os documentos em [`docs/`](docs/README.md) registram contratos analíticos, decisões e critérios de validação por componente.
 
 ## 8. Encerrar a execução e controlar custos
 

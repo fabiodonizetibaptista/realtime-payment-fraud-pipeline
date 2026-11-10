@@ -1,10 +1,9 @@
-# Etapa 10 — Evidências de MATCH_RECOGNIZE
+# Validação — Detecção de padrão com MATCH_RECOGNIZE
 
 ## 1. Identificação
 
-- Branch: etapa-10
 - SQL: sql/fraud_detection/pattern/01_match_recognize.sql
-- Execução: PENDENTE — pipeline integral
+- Execução: PENDENTE — validação remota não registrada
 - Commit executado: PENDENTE
 - Data da execução: PENDENTE
 
