@@ -5,6 +5,8 @@ Nao cria, altera ou remove recursos, slots ou dados.
 Aiven fornece wal_level=logical; o preflight valida esse requisito.
 """
 
+import os
+import ssl
 import sys
 from pathlib import Path
 
@@ -14,6 +16,37 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from safety import load_env_file
+
+REQUIRED_CONFIG = (
+    "PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD",
+    "CDC_PGUSER", "CDC_PGPASSWORD", "PG_CA",
+)
+
+
+def read_config():
+    """Valida pre-requisitos locais antes de abrir qualquer conexao."""
+    config = load_env_file(ROOT / ".env")
+    # Ambiente explicito tem precedencia sobre o arquivo local.
+    config.update({key: os.environ[key] for key in REQUIRED_CONFIG if os.environ.get(key)})
+    missing = [key for key in REQUIRED_CONFIG if not config.get(key)]
+    if missing:
+        print("POSTGRES_CONFIG_STATUS=INCOMPLETE")
+        print("POSTGRES_MISSING_KEYS=" + ",".join(missing))
+        print("NEXT_ACTION=Configure as chaves no .env local ou ambiente; veja docs/deployment.md")
+        raise RuntimeError("POSTGRES_ENV_INCOMPLETE")
+    try:
+        port = int(config["PGPORT"])
+        if not (1 <= port <= 65535):
+            raise ValueError
+    except ValueError:
+        raise RuntimeError("POSTGRES_PORT_INVALID") from None
+    ca = Path(config["PG_CA"]).expanduser()
+    if not ca.is_file():
+        print("POSTGRES_CA_STATUS=MISSING_FILE")
+        print("NEXT_ACTION=Configure PG_CA com o caminho do certificado CA obtido da Aiven")
+        raise RuntimeError("POSTGRES_CA_MISSING")
+    return config
+
 
 EXPECTED_COUNTS = {
     "public.customers": 200,
@@ -33,16 +66,18 @@ BUSINESS_TABLES = tuple(EXPECTED_COUNTS)[:5]
 
 
 def connect(env, use_cdc=False):
+    # TLS com verificacao de certificado e hostname (equivalente a verify-full).
+    context = ssl.create_default_context(cafile=str(Path(env["PG_CA"]).expanduser()))
     return pg8000.dbapi.connect(
         host=env["PGHOST"],
         port=int(env["PGPORT"]),
         database=env["PGDATABASE"],
-        user="cdc_user" if use_cdc else env["PGUSER"],
+        user=env["CDC_PGUSER"] if use_cdc else env["PGUSER"],
         password=(
             env["CDC_PGPASSWORD"]
             if use_cdc else env["PGPASSWORD"]
         ),
-        ssl_context=True,
+        ssl_context=context,
         timeout=20,
     )
 
@@ -57,15 +92,7 @@ def scalar(cursor, sql, *params):
 
 
 def verify():
-    env = load_env_file(ROOT / ".env")
-
-    required = (
-        "PGHOST", "PGPORT", "PGDATABASE",
-        "PGUSER", "PGPASSWORD", "CDC_PGPASSWORD",
-    )
-
-    if not all(env.get(key) for key in required):
-        raise RuntimeError("ENV_INCOMPLETE")
+    env = read_config()
 
     admin = None
     cdc = None
@@ -198,7 +225,7 @@ def verify():
 
         cdc_login_ok = (
             scalar(cdc_cursor, "SELECT CURRENT_USER")
-            == "cdc_user"
+            == env["CDC_PGUSER"]
         )
 
         cdc_read_ok = (

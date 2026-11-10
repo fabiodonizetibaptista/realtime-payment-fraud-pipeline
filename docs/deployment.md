@@ -19,6 +19,17 @@ Não versionar `.env`. Usar variáveis de ambiente e/ou `.env` local não public
 
 Os acessos de Kafka/Schema Registry e as variáveis `TF_VAR_foundation_*` podem ser disponibilizados após o primeiro provisionamento via `scripts/export_foundation_env.py`. Não imprimir segredos ou conteúdo bruto de State e planos.
 
+## Preparacao segura do PostgreSQL e preflight CDC (L12 / bloco 3.3)
+
+1. Criar e autorizar suas contas Aiven/Confluent, configurar variaveis do Terraform, revisar o plano e aplicar a Foundation e o provisionamento do PostgreSQL conforme os gates do projeto. **Nao** executar o preflight CDC antes de o servico existir.
+2. Obter do painel da Aiven, para o servico criado, os dados de conexao administrativos e o **certificado CA oficial**. Preencher localmente `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` e `PG_CA` (caminho local para o PEM, por exemplo `.local/aiven-ca.pem`); o arquivo PEM e o `.env` nao devem ser versionados. Nao copiar segredos para terminais compartilhados ou logs.
+3. Executar `python scripts/bootstrap_postgres.py check` para diagnostico **somente leitura**. Depois de confirmar infraestrutura e custos, executar `python scripts/bootstrap_postgres.py apply` **somente com autorizacao**, pois modifica schema e seed.
+4. Criar/verificar o usuario CDC dedicado conforme os scripts SQL versionados, com permissao de replicacao e os privilegios minimos. Configurar `CDC_PGUSER=cdc_user` e `CDC_PGPASSWORD` de forma privada. A senha do conector (`TF_VAR_cdc_connector_password`) deve corresponder a senha configurada para a identidade que o conector utiliza; consultar a definicao Terraform antes de ativar.
+5. Executar `python scripts/preflight_postgres_cdc.py`: ele bloqueia localmente e lista **somente nomes** das configuracoes ausentes ou CA inexistente, antes de se conectar. Com acesso disponivel verifica `wal_level`, `max_replication_slots`, `max_wal_senders`, publication, contagens, replica identity, privilegios e login CDC. A existencia do slot de replicacao e apenas informativa; sua criacao e gerenciada no ciclo do conector.
+6. `python database/validation/09_cdc_preflight.py show` utiliza variaveis de ambiente de processo (`PGHOST` etc. e `PG_CA`) e **nao** importa automaticamente `.env`. Seu subcomando `drop-slot` **modifica o banco** e nao deve ser utilizado como preflight.
+
+**Limite de evidencia:** sem PostgreSQL provisionado e credenciais proprias nao e possivel confirmar configuracoes remotas. Falha de configuracao local nao equivale a falha de WAL/publication/replicacao. A verificacao TLS exige CA confiavel e hostname correspondente, sem `ssl_context=True` permissivo.
+
 ## Sequência lógica e pontos de controle
 
 | Fase | Ação verificada no código | Controle |

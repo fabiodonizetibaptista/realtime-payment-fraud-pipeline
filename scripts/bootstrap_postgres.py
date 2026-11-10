@@ -9,6 +9,7 @@ Credenciais: .env na raiz do projeto; nunca imprime valores confidenciais.
 
 import argparse
 import os
+import ssl
 import sys
 from pathlib import Path
 
@@ -44,18 +45,26 @@ def read_local_env():
 
 def connect():
     stored = read_local_env()
+    for key in ("PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PG_CA"):
+        if os.environ.get(key):
+            stored[key] = os.environ[key]
     # Usa credenciais exportadas dos recursos gerenciados,
     # evitando hosts e senhas fixos no codigo.
-    keys = ("PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD")
+    keys = ("PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PG_CA")
     if not all(stored.get(k) for k in keys):
         raise RuntimeError("POSTGRES_ENV_INCOMPLETE")
+    ca = Path(stored["PG_CA"]).expanduser()
+    if not ca.is_file():
+        raise RuntimeError("POSTGRES_CA_MISSING")
+    # CA confiavel e hostname verificado; sem fallback TLS permissivo.
+    context = ssl.create_default_context(cafile=str(ca))
     return pg8000.dbapi.connect(
         host=stored["PGHOST"],
         port=int(stored["PGPORT"]),
         database=stored["PGDATABASE"],
         user=stored["PGUSER"],
         password=stored["PGPASSWORD"],
-        ssl_context=True,
+        ssl_context=context,
         timeout=20,
     )
 
