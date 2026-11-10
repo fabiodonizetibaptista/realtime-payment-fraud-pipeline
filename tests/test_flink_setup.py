@@ -68,8 +68,8 @@ def step(kind="primary_key", expected="account_id"):
     return DDLStep(
         name="payment-fraud-setup-accounts-pk",
         table="accounts",
-        inspect_file="sql/etapa-9/07_show_create_accounts.sql",
-        ddl_file="sql/stage8_accounts_primary_key.sql",
+        inspect_file="sql/enrichment/07_show_create_accounts.sql",
+        ddl_file="sql/enrichment/accounts_primary_key.sql",
         kind=kind,
         expected=expected,
     )

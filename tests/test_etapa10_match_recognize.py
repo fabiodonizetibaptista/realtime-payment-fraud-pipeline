@@ -11,7 +11,7 @@ from pathlib import Path
 
 SQL_PATH = (
     Path(__file__).resolve().parents[1]
-    / "sql/etapa-10/01_match_recognize.sql"
+    / "sql/fraud_detection/pattern/01_match_recognize.sql"
 )
 
 

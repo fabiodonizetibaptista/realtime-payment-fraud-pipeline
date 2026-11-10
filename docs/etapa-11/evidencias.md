@@ -10,7 +10,7 @@
 ## 2. Processamento contínuo
 
 SQL:
-`sql/etapa-11/01_continuous_matches.sql`
+`sql/fraud_detection/continuous/01_continuous_matches.sql`
 
 Statement:
 `etapa11-fraud-pattern-matches`
@@ -24,7 +24,7 @@ Estado observado: PENDENTE
 ## 3. Consulta independente
 
 SQL:
-`sql/etapa-11/02_inspect_matches.sql`
+`sql/fraud_detection/continuous/02_inspect_matches.sql`
 
 Comando:
 `python3 -m scripts.etapa11_execution inspect`
@@ -54,7 +54,7 @@ Consequentemente:
 - Esses registros continuam disponíveis na origem para inspeção.
 
 SQL de inspeção:
-`sql/etapa-11/03_inspect_null_cards.sql`
+`sql/fraud_detection/continuous/03_inspect_null_cards.sql`
 
 - [ ] Inspeção executada
 - [ ] Quantidade de registros sem cartão observada

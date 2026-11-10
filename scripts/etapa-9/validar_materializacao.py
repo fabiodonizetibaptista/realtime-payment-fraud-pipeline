@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path.cwd()
 TF = ROOT / "infra/terraform"
-SQL = ROOT / "sql/etapa-9/04_temporal_join.sql"
+SQL = ROOT / "sql/enrichment/04_temporal_join.sql"
 
 ENV = dict(os.environ, TF_LOG="OFF", TF_INPUT="0")
 ENV.pop("TF_LOG_PATH", None)

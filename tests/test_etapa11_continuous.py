@@ -7,8 +7,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SQL10 = ROOT / "sql/etapa-10/01_match_recognize.sql"
-SQL11 = ROOT / "sql/etapa-11"
+SQL10 = ROOT / "sql/fraud_detection/pattern/01_match_recognize.sql"
+SQL11 = ROOT / "sql/fraud_detection/continuous"
 
 
 def read(name):

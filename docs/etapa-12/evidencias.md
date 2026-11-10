@@ -51,10 +51,10 @@ e não somente a quantidade global de alertas.
 Destino implementado: `fraud.pattern_matches`
 
 SQL de persistência:
-`sql/etapa-11/01_continuous_matches.sql`
+`sql/fraud_detection/continuous/01_continuous_matches.sql`
 
 SQL de inspeção:
-`sql/etapa-11/02_inspect_matches.sql`
+`sql/fraud_detection/continuous/02_inspect_matches.sql`
 
 Contrato:
 `docs/etapa-12/contrato_alertas.md`
@@ -102,7 +102,7 @@ Resultado real: PENDENTE
 ## 6. Watermark
 
 SQL:
-`sql/etapa-12/01_inspect_watermark.sql`
+`sql/validation/01_inspect_watermark.sql`
 
 - [ ] Watermark observado
 - [ ] Progresso temporal confirmado

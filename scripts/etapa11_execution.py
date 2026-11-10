@@ -18,7 +18,7 @@ from scripts.flink_portability import render_for_runtime, resolve_names
 from scripts.flink_runtime import FlinkRuntime, FlinkRuntimeError
 
 ROOT = Path(__file__).resolve().parents[1]
-SQL_DIR = ROOT / "sql" / "etapa-11"
+SQL_DIR = ROOT / "sql" / "fraud_detection" / "continuous"
 
 FILES = {
     "start": "01_continuous_matches.sql",

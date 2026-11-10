@@ -3,7 +3,7 @@
 ## 1. Identificação
 
 - Branch: etapa-10
-- SQL: sql/etapa-10/01_match_recognize.sql
+- SQL: sql/fraud_detection/pattern/01_match_recognize.sql
 - Execução: PENDENTE — pipeline integral
 - Commit executado: PENDENTE
 - Data da execução: PENDENTE
@@ -11,7 +11,7 @@
 ## 2. SQL integral executado
 
 Fonte versionada:
-`sql/etapa-10/01_match_recognize.sql`
+`sql/fraud_detection/pattern/01_match_recognize.sql`
 
 - [ ] Arquivo submetido integralmente ao Flink
 - [ ] SQL executado corresponde ao commit registrado

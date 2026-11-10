@@ -6,10 +6,10 @@ Tabela de resultados:
 `fraud.pattern_matches`
 
 Definida em:
-`sql/etapa-11/01_continuous_matches.sql`
+`sql/fraud_detection/continuous/01_continuous_matches.sql`
 
 Consulta de inspeção:
-`sql/etapa-11/02_inspect_matches.sql`
+`sql/fraud_detection/continuous/02_inspect_matches.sql`
 
 A tabela representa correspondências identificadas pela regra
 de fraude. Ela não registra todas as transações individuais.
@@ -21,7 +21,7 @@ O exemplo de entrega do desafio utiliza o nome
 
 Esta implementação utiliza `fraud.pattern_matches`,
 definido pelo CTAS em
-`sql/etapa-11/01_continuous_matches.sql`.
+`sql/fraud_detection/continuous/01_continuous_matches.sql`.
 
 A diferença é de nomenclatura: o destino implementado
 representa as correspondências identificadas pela regra
@@ -55,12 +55,12 @@ Os tipos finais devem ser confirmados com DESCRIBE no Flink.
 - AFTER MATCH SKIP PAST LAST ROW
 
 SQL original:
-`sql/etapa-10/01_match_recognize.sql`
+`sql/fraud_detection/pattern/01_match_recognize.sql`
 
 ## Watermark
 
 Consulta de observação:
-`sql/etapa-12/01_inspect_watermark.sql`
+`sql/validation/01_inspect_watermark.sql`
 
 O atributo temporal utilizado é o $rowtime do Kafka.
 A estratégia padrão do Confluent utiliza SOURCE_WATERMARK,

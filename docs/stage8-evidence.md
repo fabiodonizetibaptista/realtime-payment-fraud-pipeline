@@ -26,7 +26,7 @@
 - Permissões de leitura e descoberta preservadas.
 - Permissões experimentais de alteração: remoção remota ainda pendente de aplicação.
 - Conector CDC permaneceu desativado.
-- SQL DDL registrado em `sql/stage8_accounts_primary_key.sql`.
+- SQL DDL registrado em `sql/enrichment/accounts_primary_key.sql`.
 
 ## Reprodutibilidade
 
@@ -72,7 +72,7 @@ arquivo ao repositorio.
 ### Reprodutibilidade
 
 O SQL DDL esta registrado em
-`sql/stage8_accounts_primary_key.sql`.
+`sql/enrichment/accounts_primary_key.sql`.
 
 A aplicacao automatica desse DDL em uma recriacao limpa
 ainda nao foi implementada nem validada. O script SQL

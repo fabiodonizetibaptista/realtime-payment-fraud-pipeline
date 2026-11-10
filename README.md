@@ -145,9 +145,9 @@ Os arquivos SQL do projeto ficam organizados no diretório `sql/`. Os componente
 Consulte os arquivos:
 
 ```text
-sql/etapa-10/01_match_recognize.sql
-sql/etapa-11/01_continuous_matches.sql
-sql/etapa-11/02_inspect_matches.sql
+sql/fraud_detection/pattern/01_match_recognize.sql
+sql/fraud_detection/continuous/01_continuous_matches.sql
+sql/fraud_detection/continuous/02_inspect_matches.sql
 ```
 
 O processamento contínuo deve ser iniciado com o executor Flink do repositório, após a disponibilização da origem Kafka e a validação das permissões da identidade de execução. Utilize a ajuda dos scripts para conferir os argumentos aceitos pela versão instalada, em vez de inserir IDs ou nomes fixos nos comandos.
@@ -174,7 +174,7 @@ Para inspecionar as correspondências, consulte o executor e o SQL de leitura em
 
 ```text
 scripts/etapa11_execution.py
-sql/etapa-11/02_inspect_matches.sql
+sql/fraud_detection/continuous/02_inspect_matches.sql
 ```
 
 **O que comprova o funcionamento de ponta a ponta:**
