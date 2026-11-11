@@ -2,12 +2,26 @@
 
 import argparse
 import json
+import sys
 import os
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import EVIDENCE_RUN_ID_PATTERN, evidence_path  # noqa: E402
+from scripts.connector_diagnostics import classify, write_diagnostic  # noqa: E402
 TF_DIR = ROOT / "infra" / "terraform"
+DIAGNOSTICS_DIR = ROOT / ".local" / "diagnostics"
+
+
+def diagnostic_run_id():
+    run_id = os.environ.get("EVIDENCE_RUN_ID", "").strip()
+    if run_id and EVIDENCE_RUN_ID_PATTERN.fullmatch(run_id):
+        return run_id
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 PLAN = TF_DIR / "cdc-stage4.tfplan"
 ADDRESS = "confluent_connector.payments_cdc[0]"
 
@@ -84,14 +98,23 @@ def main():
 
     if result.returncode != 0:
         print("ERROR_CATEGORY=CONNECTOR_PROVISIONING_FAILED")
+        # O texto do provider e analisado somente em memoria; apenas
+        # categoria, regra e status HTTP numerico sao impressos/gravados.
+        diagnostic = classify(result.stderr + "\n" + result.stdout)
+        path = write_diagnostic(DIAGNOSTICS_DIR, diagnostic_run_id(), diagnostic)
+        print("DIAGNOSTIC_CATEGORY=", diagnostic["category"])
+        print("DIAGNOSTIC_RULE=", diagnostic["rule_id"])
+        print("DIAGNOSTIC_HTTP_STATUS=", diagnostic["http_status"])
+        print("DIAGNOSTIC_FILE=", path.relative_to(ROOT).as_posix())
         print("ERROR_DETAILS_REDACTED=True")
+        print("NEXT_ACTION=Verificar conector orfao: confluent connect cluster list --environment <env> --cluster <lkc>")
         print("APPLY_GATE=BLOCKED")
         return 1
 
     # Evidencia dedicada, sem stdout/stderr do provider ou credenciais.
     from datetime import datetime, timezone
 
-    evidence_dir = ROOT / "evidencias" / "cdc"
+    evidence_dir = evidence_path(ROOT, "cdc")
     evidence_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     evidence = {
