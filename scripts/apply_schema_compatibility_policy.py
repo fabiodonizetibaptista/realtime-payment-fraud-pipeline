@@ -12,13 +12,16 @@ import os
 import subprocess
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from safety import load_env_file
+from scripts.cdc_stage_flags import configure_flags
 
 ROOT = Path(__file__).resolve().parents[1]
 TF_DIR = ROOT / "infra" / "terraform"
 PLAN = TF_DIR / "stage6-subject-config.tfplan"
 
-ADDRESS = "confluent_subject_config.transactions_value"
+ADDRESS = "confluent_subject_config.transactions_value[0]"
 SUBJECT = "payments.public.transactions-value"
 
 
@@ -48,13 +51,7 @@ def main():
         if value and not env.get(key):
             env[key] = value
 
-    env.update({
-        "TF_LOG": "OFF",
-        "TF_INPUT": "0",
-        "TF_VAR_enable_cdc_connector": "false",
-        "TF_VAR_enable_cdc_acls": "true",
-        "TF_VAR_enable_kafka_acls": "true",
-    })
+    configure_flags(env, connector="auto", subject="on")
 
     if config.get("CDC_PGPASSWORD"):
         env["TF_VAR_cdc_connector_password"] = config["CDC_PGPASSWORD"]
@@ -113,15 +110,15 @@ def main():
 
         diagnostic = (result.stderr + "\n" + result.stdout).lower()
 
-        if re.search(r"\\b403\\b|forbidden|permission denied|not authorized", diagnostic):
+        if re.search(r"\b403\b|forbidden|permission denied|not authorized", diagnostic):
             category = "HTTP_403_AUTHORIZATION"
-        elif re.search(r"\\b401\\b|unauthorized|authentication failed", diagnostic):
+        elif re.search(r"\b401\b|unauthorized|authentication failed", diagnostic):
             category = "HTTP_401_AUTHENTICATION"
-        elif re.search(r"\\b409\\b|conflict|already exists", diagnostic):
+        elif re.search(r"\b409\b|conflict|already exists", diagnostic):
             category = "HTTP_409_CONFLICT"
-        elif re.search(r"\\b400\\b|bad request|invalid compatibility", diagnostic):
+        elif re.search(r"\b400\b|bad request|invalid compatibility", diagnostic):
             category = "HTTP_400_INVALID_REQUEST"
-        elif re.search(r"\\b404\\b|not found", diagnostic):
+        elif re.search(r"\b404\b|not found", diagnostic):
             category = "HTTP_404_NOT_FOUND"
         elif re.search(r"timeout|connection refused|network|dial tcp|tls handshake", diagnostic):
             category = "NETWORK_ERROR"
@@ -162,7 +159,7 @@ def main():
     print("SUBJECT_POLICY_IN_STATE=", verified)
     print("POLICY_BACKWARD=", verified)
     print("SCHEMA_VERSIONS_CHANGED=False")
-    print("CDC_CONNECTOR_ACTIVATED=False")
+    print("CDC_CONNECTOR_CREATED_BY_POLICY_APPLY=False")
     print("SECRETS_PRINTED=False")
 
     if not verified:

@@ -1,5 +1,6 @@
 """Prepara o plano Terraform do CDC sem criar recursos remotos."""
 
+import argparse
 import json
 import os
 import subprocess
@@ -10,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from safety import load_env_file
+from scripts.cdc_stage_flags import configure_flags
 
 TF_DIR = ROOT / "infra" / "terraform"
 PLAN = TF_DIR / "cdc-stage4.tfplan"
@@ -38,13 +40,8 @@ def main():
         if value and not execution_env.get(key):
             execution_env[key] = value
 
-    execution_env.update({
-        "TF_LOG": "OFF",
-        "TF_VAR_enable_cdc_connector": "true",
-        "TF_VAR_enable_cdc_acls": "true",
-        "TF_VAR_enable_kafka_acls": "true",
-        "TF_VAR_cdc_connector_password": password,
-    })
+    configure_flags(execution_env, connector="on", subject="auto")
+    execution_env["TF_VAR_cdc_connector_password"] = password
 
     print("CDC_CREDENTIAL_PRESENT=True")
     print("FOUNDATION_ACLS_PRESERVED=True")
@@ -190,6 +187,8 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Planeja exclusivamente o conector CDC, sem aplicar.")
+    parser.parse_args()  # --help nao executa Terraform.
     try:
         raise SystemExit(main())
     except Exception as error:

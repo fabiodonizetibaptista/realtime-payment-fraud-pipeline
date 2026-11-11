@@ -16,6 +16,7 @@ PLAN = TF_DIR / "stage6-schema-validation.tfplan"
 
 sys.path.insert(0, str(ROOT))
 from safety import load_env_file
+from scripts.cdc_stage_flags import configure_flags
 
 
 def terraform(*args, env):
@@ -44,12 +45,7 @@ def main():
         if value and not env.get(key):
             env[key] = value
 
-    env.update({
-        "TF_LOG": "OFF",
-        "TF_VAR_enable_cdc_connector": "false",
-        "TF_VAR_enable_cdc_acls": "true",
-        "TF_VAR_enable_kafka_acls": "true",
-    })
+    configure_flags(env, connector="auto", subject="auto")
 
     # Terraform pode precisar dessa variavel mesmo com o
     # conector desligado. Nunca exibir seu valor.

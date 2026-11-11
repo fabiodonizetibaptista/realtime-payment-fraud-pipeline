@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TF_DIR = ROOT / "infra" / "terraform"
 
 sys.path.insert(0, str(ROOT))
+from scripts.cdc_stage_flags import configure_flags
 from safety import load_env_file
 
 
@@ -250,6 +251,7 @@ def check_readiness(env):
     # para nao interpretar essas ACLs como recursos a destruir.
     execution_env["TF_VAR_enable_cdc_acls"] = "true"
     execution_env["TF_VAR_enable_kafka_acls"] = "true"
+    configure_flags(execution_env, connector="auto", subject="auto")
 
     # -detailed-exitcode:
     # 0 = nenhuma mudanca pendente

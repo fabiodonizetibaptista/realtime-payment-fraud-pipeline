@@ -6,10 +6,12 @@
 # Este recurso gerencia a politica, nao registra novas versoes Avro.
 
 resource "confluent_subject_config" "transactions_value" {
+  count = var.enable_subject_compatibility ? 1 : 0
+
   subject_name        = "payments.public.transactions-value"
   compatibility_level = "BACKWARD"
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }

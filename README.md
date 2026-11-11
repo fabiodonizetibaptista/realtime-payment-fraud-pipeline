@@ -412,3 +412,36 @@ README.md            Guia de arquitetura e utilização
 ---
 
 **Nota de execução:** este README descreve os recursos, o fluxo operacional e os critérios de validação. A execução integrada deve ser comprovada por evidências coletadas no ambiente efetivamente provisionado; resultados de testes locais não equivalem à homologação do pipeline em nuvem.
+
+
+### Reproducao Windows — ordem CDC por etapas (correcao de sequenciamento)
+
+1. Execute e valide `python scripts/bootstrap_postgres.py check` e
+   `python scripts/preflight_postgres_cdc.py` antes de qualquer Confluent CDC.
+2. ACLs permanentes, **sem conector**: `python scripts/plan_cdc_acls.py`.
+   Revise `ONLY_EXPECTED_ACL_CREATES=True` e `ACL_PLAN_GATE=PASS`; depois
+   `python scripts/apply_cdc_acls.py --confirm-acls`.
+3. Conector temporario: `python scripts/plan_cdc_connector.py`; confirme
+   `ONLY_CDC_CONNECTOR_CREATE=True` e `PLAN_GATE=PASS`, depois utilize
+   `python scripts/apply_cdc_connector.py` conforme gate de autorizacao.
+   **Cobranca do conector pode iniciar nesta etapa.**
+4. Comprove replication slot, topicos Kafka e subject
+   `payments.public.transactions-value`. So depois planeje a politica com
+   `python scripts/plan_schema_compatibility_policy.py`; revise
+   `POLICY_PLAN_GATE=PASS` antes de executar
+   `python scripts/apply_schema_compatibility_policy.py`.
+5. Execute testes de fraude e colete evidencias sanitizadas. Depois destrua
+   **somente** o conector via `python scripts/teardown_cdc_connector.py --execute`
+   e verifique a ausencia remota; State vazio nao comprova encerramento da cobranca.
+
+As ACLs ficam habilitadas entre as etapas. A politica do subject e condicional
+(`enable_subject_compatibility`, inicialmente `false`) e nunca deve ser
+forcada para `false` depois de criada. Os scripts de etapa consultam o State
+para manter a flag conforme recursos ja gerenciados; o recurso possui
+`prevent_destroy=true` para impedir exclusoes acidentais.
+
+**Planos Terraform salvos antes desta correcao nao devem ser aplicados**,
+pois foram produzidos com outra configuracao HCL. Trate-os como artefatos
+sensíveis, revise o State e gere planos novos com os comandos por etapa.
+A ferramenta Terraform `-target` fica reservada ao teardown explicito do
+conector, cujo plano deve conter exatamente uma exclusao.

@@ -131,3 +131,11 @@ variable "cdc_connector_name" {
     error_message = "cdc_connector_name nao pode ser vazio."
   }
 }
+
+# Fica desligado ate o subject existir e o operador aprovar o plano da politica.
+# Depois da criacao, manter ativo: prevent_destroy bloqueia destruicao acidental.
+variable "enable_subject_compatibility" {
+  description = "Controla a politica BACKWARD especifica do subject CDC."
+  type        = bool
+  default     = false
+}

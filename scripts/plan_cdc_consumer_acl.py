@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from safety import load_env_file
+from scripts.cdc_stage_flags import configure_flags
 
 TF_DIR = ROOT / "infra" / "terraform"
 PLAN = TF_DIR / "stage5-consumer-acl.tfplan"
@@ -37,12 +38,7 @@ def main():
         if value and not env.get(key):
             env[key] = value
 
-    env.update({
-        "TF_LOG": "OFF",
-        "TF_VAR_enable_cdc_connector": "false",
-        "TF_VAR_enable_cdc_acls": "true",
-        "TF_VAR_enable_kafka_acls": "true",
-    })
+    configure_flags(env, connector="off", subject="auto")
 
     # O conector da Etapa 4 deve continuar ausente do State.
     state = run("state", "list", env=env)
