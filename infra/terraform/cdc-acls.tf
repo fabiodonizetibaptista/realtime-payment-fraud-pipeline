@@ -1,7 +1,7 @@
 # ACLs do conector CDC PostgreSQL/Debezium.
 #
 # As permissoes usam a identidade criada pela Foundation.
-# Os IDs sao referenciados dinamicamente; nenhum ID da V1 e reutilizado.
+# Os IDs sao referenciados dinamicamente; nenhum identificador de ambiente anterior e reutilizado.
 #
 # Todas as ACLs permanecem desabilitadas ate a exportacao das credenciais
 # administrativas e a ativacao explicita da segunda fase.
@@ -55,7 +55,7 @@ resource "confluent_kafka_acl" "cdc_cluster_describe_configs" {
 }
 
 # O ID do conector faz parte do nome do heartbeat Debezium.
-# O prefixo evita vincular a permissao a um ID antigo da V1.
+# O prefixo evita vincular a permissao a um identificador de outra implantacao.
 resource "confluent_kafka_acl" "cdc_heartbeat" {
   for_each = var.enable_cdc_acls ? toset([
     "CREATE",

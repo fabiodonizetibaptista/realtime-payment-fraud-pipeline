@@ -1,7 +1,7 @@
-# Etapa 7 — Identidade dedicada ao processamento Flink.
+# Identidade dedicada ao processamento Flink.
 #
 # Todos os recursos sao criados pelo Terraform.
-# Nenhum identificador da V1 e utilizado.
+# Nenhum identificador de outra implantacao e utilizado.
 
 # A regiao Flink deve corresponder a regiao do Compute Pool.
 data "confluent_flink_region" "payment_fraud" {

@@ -40,17 +40,15 @@ flowchart LR
 
 É necessário possuir:
 
-- Um ambiente local ou remoto compat?vel com as ferramentas do projeto (Windows, Linux ou macOS).
-- Git, Python e Terraform, conforme os requisitos de vers?o definidos neste reposit?rio.
-- Confluent CLI e acesso ?s contas de Aiven e Confluent Cloud utilizadas pela arquitetura.
-
-O GitHub Codespaces ? opcional. Pode ser utilizado como ambiente de desenvolvimento, mas n?o ? necess?rio para reproduzir o projeto. A compatibilidade de cada sistema operacional deve ser validada com os comandos de instala??o e testes documentados.
+- Um ambiente local ou remoto compatível com as ferramentas do projeto (Windows, Linux ou macOS).
+- Git, Python e Terraform, conforme os requisitos de versão definidos neste repositório.
+- Confluent CLI e acesso às contas Aiven e Confluent Cloud utilizadas pela arquitetura.
 - Uma conta **Aiven** com permissão para administrar um serviço PostgreSQL compatível com replicação lógica.
 - Uma conta **Confluent Cloud** com permissões para Kafka, Schema Registry, Connect e Flink, conforme os recursos provisionados.
 - Credenciais de API válidas para os provedores, configuradas como segredos do ambiente.
 - Créditos ou orçamento para executar serviços gerenciados. **A infraestrutura não é necessariamente gratuita.**
 
-O projeto exige **Python 3.12+**, **Terraform 1.16+** e **Confluent CLI 4.81+** (mínimos verificados em `lab.py`). Instale as dependências Python de `requirements.txt`. O `.devcontainer/` oferece uma configuração opcional, com versões de referência das ferramentas; consulte `infra/terraform/versions.tf` para os providers.
+O projeto exige **Python 3.12+**, **Terraform 1.16+** e **Confluent CLI 4.81+** (mínimos verificados em `lab.py`). Instale as dependências Python de `requirements.txt`. O GitHub Codespaces é opcional; o `.devcontainer/` oferece uma configuração de conveniência, com versões de referência das ferramentas; consulte `infra/terraform/versions.tf` para os providers.
 
 **Atenção à portabilidade:** o projeto é projetado para execução em terminais compatíveis, mas os testes locais não demonstram uma implantação de ponta a ponta em todos os sistemas operacionais. Consulte [Implantação e portabilidade](docs/deployment.md).
 
@@ -58,13 +56,13 @@ O projeto exige **Python 3.12+**, **Terraform 1.16+** e **Confluent CLI 4.81+** 
 
 ## 1. Preparar o ambiente de execução
 
-**Bootstrap portavel (Windows, Linux e macOS):** antes da instalacao e da configuracao de contas, consulte as orientacoes especificas para seu sistema:
+**Bootstrap portátil (Windows, Linux e macOS):** após clonar o repositório, consulte as instruções específicas para seu sistema:
 
 ```text
 python -m scripts.bootstrap_local instructions
 ```
 
-Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py -3.12`, conforme disponibilidade). O assistente **nao instala** softwares nem acessa a nuvem; fornece links oficiais e instrucoes de `PATH`. Depois de instalar as ferramentas, execute `python -m scripts.check_environment`. Para criar um `.env` local a partir do modelo **sem substituir arquivo existente**, execute:
+Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py -3.12`, conforme disponibilidade). O assistente **não instala** softwares nem acessa a nuvem; fornece links oficiais e instruções de `PATH`. Depois de instalar as ferramentas, execute `python -m scripts.check_environment`. Para criar um `.env` local a partir do modelo **sem substituir arquivo existente**, execute:
 
 ```text
 python -m scripts.bootstrap_local init-env
@@ -72,14 +70,12 @@ python -m scripts.bootstrap_local init-env
 
 **Ferramenta ausente ou fora do `PATH`?** Execute `python -m scripts.bootstrap_local repair-tools` com o Python do seu `.venv`; o comando identifica versões ausentes/incompatíveis e indica como recuperar Terraform e Confluent CLI em cada sistema. Não altera seu computador. Consulte [recuperação multiplataforma](docs/local-bootstrap.md#recuperação-guiada-quando-uma-cli-está-ausente-ou-abaixo-do-mínimo).
 
-Antes de provisionar, valide os nomes de configuracao presentes com `python -m scripts.check_configuration foundation`; depois da Foundation use `python -m scripts.check_configuration pipeline`. Diagnosticos adicionais: `postgres` e `cdc`. Nenhum desses comandos acessa a nuvem ou imprime credenciais.
+Antes de provisionar, valide os nomes de configuração presentes com `python -m scripts.check_configuration foundation`; depois da Foundation use `python -m scripts.check_configuration pipeline`. Diagnósticos adicionais: `postgres` e `cdc`. Nenhum desses comandos acessa a nuvem ou imprime credenciais.
 
-A criacao nao preenche credenciais, e o arquivo `.env` deve permanecer fora do controle de versao. Consulte [o guia de bootstrap multiplataforma](docs/local-bootstrap.md).
+A criação não preenche credenciais, e o arquivo `.env` deve permanecer fora do controle de versão. Consulte [o guia de bootstrap multiplataforma](docs/local-bootstrap.md).
 
 
-Clone o repositório em seu computador ou em um ambiente remoto. **Não é necessário GitHub Codespaces.** Instale Git, Python 3.12+, Terraform 1.16+ e Confluent CLI 4.81+ antes da validação. Consulte o [guia de implantação](docs/deployment.md) para os pré-requisitos e as limitações de portabilidade.
-
-Prepare um ambiente virtual e instale as dependências:
+Depois de instalar Git, Python 3.12+, Terraform 1.16+ e Confluent CLI 4.81+ pelas instruções do [guia multiplataforma](docs/local-bootstrap.md), prepare o ambiente virtual e instale as dependências:
 
 **Windows (PowerShell):**
 
@@ -115,6 +111,8 @@ Forneça credenciais por variáveis de ambiente do sistema ou por `.env` **local
 | `TF_VAR_aiven_pg_service_name` | Nome desejado para o serviço PostgreSQL. |
 | `TF_VAR_foundation_*` | Parâmetros e chaves gerados/obtidos após a criação da Foundation, quando necessários. |
 
+**Antes da Foundation:** crie suas próprias contas/projeto Aiven e organização Confluent Cloud com as permissões exigidas; gere as chaves administrativas conforme [o guia de implantação](docs/deployment.md) e faça `confluent login` em um terminal privado. O login da CLI não substitui as API Keys usadas pelo Terraform. Confira o contexto ativo antes de consultar ou alterar recursos. Não copie identificadores ou credenciais de execuções anteriores.
+
 **O projeto Aiven deve existir antes da implantação; o Terraform cria o serviço PostgreSQL, não a conta/projeto Aiven.** As credenciais Kafka/Schema Registry geradas pelo Terraform podem ser exportadas para o `.env` local usando:
 
 ```bash
@@ -127,13 +125,37 @@ Execute a exportação somente após o provisionamento correspondente. Os valore
 
 Os arquivos de infraestrutura estão em `infra/terraform/`. Eles descrevem os serviços de origem, recursos da Confluent Cloud, identidades, permissões, contratos de dados e componentes necessários ao processamento.
 
-Antes de realizar qualquer alteração remota:
+A implantação ocorre em **duas fases**, e os comandos abaixo devem ser executados na ordem indicada. Use `python` com o ambiente virtual ativado ou o executável do `.venv` (`.\.venv\Scripts\python.exe` no PowerShell; `.venv/bin/python` no Linux/macOS). **Os comandos `apply` modificam recursos remotos e podem gerar custos.**
 
-```bash
-python3 lab.py plan
+**Fase 1 — Foundation (infraestrutura inicial):**
+
+```text
+python -m scripts.check_configuration foundation
+python lab.py plan
+python lab.py review-plan
+python lab.py apply --confirm-foundation
 ```
 
-Revise as ações propostas, os recursos afetados e o custo estimado. **Um plano não provisiona recursos.** A aplicação deve utilizar o procedimento controlado de Terraform disponibilizado no repositório, respeitando as aprovações e as verificações previstas nesse procedimento.
+O `plan` deve produzir o plano restrito aos recursos Foundation, e `review-plan` deve aprovar somente alterações autorizadas. `apply` exige confirmação explícita. Se o plano for rejeitado, **não** contorne a allowlist: investigue a divergência. Antes de aplicar, confirme permissões, State e orçamento; não execute aplicações concorrentes sobre a mesma infraestrutura.
+
+**Transição entre as fases — exportar outputs e validar configuração:**
+
+```text
+python -m scripts.export_foundation_env
+python -m scripts.check_configuration pipeline
+```
+
+O exportador lê os outputs da Foundation e preenche variáveis `TF_VAR_foundation_*` no `.env` local; não transcreva esses valores manualmente nem publique o arquivo. Os outputs só existirão após a aplicação da primeira fase.
+
+**Fase 2 — pipeline completo (revisão antes de criar):**
+
+```text
+python lab.py plan-pipeline
+python lab.py review-plan --pipeline
+python lab.py apply-pipeline --confirm-pipeline
+```
+
+A inclusão do conector CDC é uma operação faturável e requer autorização adicional `--allow-cdc`, **somente** na janela em que se pretende ativá-lo. Consulte [implantação](docs/deployment.md) antes dessa opção. `plan-pipeline` é distinto de `plan` e não substitui a revisão de ambos os planos.
 
 A implantação depende de credenciais válidas e de configurações específicas da conta. Identificadores de ambiente, cluster e Compute Pool devem ser obtidos dos recursos provisionados, e não copiados de execuções anteriores.
 
@@ -154,6 +176,17 @@ Esses comandos consultam a conta ativa na CLI. Verifique se o contexto seleciona
 O fluxo de ingestão começa no PostgreSQL. A origem deve conter as tabelas transacionais exigidas pelo projeto e estar configurada para permitir replicação lógica.
 
 O conector gerenciado Debezium lê as alterações dessas tabelas e as envia aos tópicos Kafka. **Sua criação é uma operação remota potencialmente faturável.** Utilize o procedimento de ativação e desativação definido no Terraform e nos scripts do repositório; não crie um conector manual paralelo.
+
+**Preparação PostgreSQL e CDC (somente após obter o endpoint e credenciais da infraestrutura):** configure `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `PG_CA`, `CDC_PGUSER`, `CDC_PGPASSWORD` e `TF_VAR_cdc_connector_password` conforme `.env.example` e [implantação](docs/deployment.md). Recupere o certificado CA para `.local/aiven-ca.pem` utilizando `python scripts/fetch_aiven_ca.py` com `TF_VAR_aiven_project` configurado; confirme o caminho da CA no ambiente local, que é diferente entre Windows e Linux. Não mostre valores de segredos em saídas ou commits.
+
+```text
+python -m scripts.check_configuration postgres
+python scripts/bootstrap_postgres.py check
+python -m scripts.check_configuration cdc
+python scripts/preflight_postgres_cdc.py
+```
+
+A inicialização de tabelas (`bootstrap_postgres.py apply`) e a configuração do usuário de replicação (`python scripts/configure_cdc_user.py`) **alteram o PostgreSQL**: execute-as somente após revisar as verificações e confirmar que está conectado ao serviço correto. Valide `wal_level`, publication, slot e permissões antes de ativar o conector. A senha do conector CDC deve ser configurada com segurança; não deve ser codificada em Terraform ou no README. A presença do conector em `RUNNING` não dispensa a prova de eventos no Kafka.
 
 Para verificar os conectores disponíveis:
 
@@ -185,6 +218,17 @@ sql/fraud_detection/continuous/01_continuous_matches.sql
 sql/fraud_detection/continuous/02_inspect_matches.sql
 ```
 
+**Sequência operacional Flink (após confirmar eventos CDC/Avro):**
+
+```text
+python lab.py flink-setup
+python lab.py flink-setup --apply
+python -m scripts.fraud_stream plan
+python -m scripts.fraud_stream start --confirm-start
+```
+
+`flink-setup --apply` e `fraud_stream start` modificam o ambiente remoto e exigem as confirmações previstas nos scripts. Confirme os statements em `RUNNING` na Confluent Cloud. Inspecione os resultados pelo SQL `sql/fraud_detection/continuous/02_inspect_matches.sql` e correlacione os IDs de `fraud.pattern_matches` com os cenários sintéticos.
+
 O processamento contínuo deve ser iniciado com o executor Flink do repositório, após a disponibilização da origem Kafka e a validação das permissões da identidade de execução. Utilize a ajuda dos scripts para conferir os argumentos aceitos pela versão instalada, em vez de inserir IDs ou nomes fixos nos comandos.
 
 O resultado esperado é a identificação de uma sequência de três transações de um mesmo cartão dentro do intervalo definido, mantendo identificadores que permitam rastrear os registros participantes.
@@ -199,8 +243,14 @@ scripts/fraud_scenarios.py
 
 Primeiro, confira o plano local:
 
-```bash
-python3 scripts/fraud_scenarios.py plan
+```text
+python -m scripts.fraud_scenarios plan
+```
+
+Após revisar o plano e autorizar os testes que inserem transações no PostgreSQL, execute:
+
+```text
+python -m scripts.fraud_scenarios execute --confirm-execute
 ```
 
 Durante a janela de integração, com o conector CDC e o processamento contínuo ativos, execute o cenário autorizado usando a interface `execute` do mesmo script. Ele foi desenvolvido para produzir um caso de controle e uma sequência de transações sintéticas que satisfaça o padrão de detecção.
@@ -226,8 +276,8 @@ Uma consulta SQL compilada ou um statement ativo não substitui essas evidência
 
 Para executar os testes automatizados locais:
 
-```bash
-python3 lab.py test
+```text
+python lab.py test
 ```
 
 Para inspecionar recursos e consumo na Confluent Cloud:
@@ -248,7 +298,16 @@ Os documentos em [`docs/`](docs/README.md) registram contratos analíticos, deci
 
 ## 8. Encerrar a execução e controlar custos
 
-Após a validação funcional:
+Após a validação funcional, consulte a revisão de destruição e o comando controlado:
+
+```text
+python lab.py teardown
+python lab.py teardown --confirm-destroy
+```
+
+O primeiro comando permite inspecionar o procedimento sem confirmar destruição; o segundo inicia a etapa de autorização interativa. Antes disso, interrompa o processamento contínuo e siga o procedimento específico de remoção do conector CDC, que pode continuar gerando cobrança. **Não destrua recursos antes de coletar as evidências, nem execute teardown simultâneo em dois ambientes que compartilhem o mesmo State.**
+
+Checklist de encerramento:
 
 1. Interrompa os statements contínuos que não precisem permanecer ativos.
 2. Desative ou destrua o conector CDC pelo procedimento controlado do Terraform.
