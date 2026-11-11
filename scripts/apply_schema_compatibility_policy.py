@@ -172,6 +172,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # --help e argumentos invalidos encerram antes de qualquer acesso remoto.
+    import argparse
+    argparse.ArgumentParser(description=(__doc__ or "").strip().splitlines()[0]).parse_args()
     try:
         main()
     except Exception as error:

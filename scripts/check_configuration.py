@@ -5,6 +5,7 @@ A verificacao confirma apenas presenca local; permissao e validade sao testes re
 """
 
 import argparse
+import hmac
 import os
 from pathlib import Path
 
@@ -71,6 +72,18 @@ def report(phase: str, root: Path = ROOT, environment: dict[str, str] | None = N
         print("CREDENTIAL_VALUES_PRINTED=False")
         return 2
 
+    password_mismatch = False
+    if phase == "cdc" and not missing:
+        # Compara a senha do cdc_user com a do conector sem exibir valores.
+        # Divergencia faz o conector falhar na autenticacao PostgreSQL.
+        present = {key.casefold(): value for key, value in config.items()}
+        match = hmac.compare_digest(
+            present["cdc_pgpassword"].encode("utf-8"),
+            present["tf_var_cdc_connector_password"].encode("utf-8"),
+        )
+        print(f"CDC_PASSWORD_MATCH={match}")
+        password_mismatch = not match
+
     if missing:
         print("CONFIG_STATUS=INCOMPLETE")
         print("MISSING_KEYS=" + ",".join(missing))
@@ -78,12 +91,15 @@ def report(phase: str, root: Path = ROOT, environment: dict[str, str] | None = N
             print("NEXT_ACTION=Aplique a Foundation e execute python -m scripts.export_foundation_env")
         else:
             print("NEXT_ACTION=Preencha as variaveis no .env local ou no ambiente; veja docs/local-bootstrap.md")
+    elif password_mismatch:
+        print("CONFIG_STATUS=CDC_PASSWORD_MISMATCH")
+        print("NEXT_ACTION=Defina TF_VAR_cdc_connector_password com o mesmo valor de CDC_PGPASSWORD")
     else:
         print("CONFIG_STATUS=PRESENT_NOT_VERIFIED")
         print("NEXT_ACTION=Continue com os gates da fase; credenciais e servicos ainda nao foram validados")
     print("CREDENTIAL_VALUES_PRINTED=False")
     print("CLOUD_CALLS=False")
-    return 1 if missing else 0
+    return 1 if missing or password_mismatch else 0
 
 
 def main(argv: list[str] | None = None) -> int:

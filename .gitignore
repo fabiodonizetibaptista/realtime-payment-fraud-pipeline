@@ -30,3 +30,6 @@ artifacts/
 *.bak
 .DS_Store
 Thumbs.db
+
+# Artefatos locais sensiveis (CA, manifests, diagnosticos, credenciais de metricas)
+.local/
