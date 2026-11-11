@@ -13,6 +13,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 TF_DIR = ROOT / "infra" / "terraform"
 
 TOPICS = (
@@ -253,7 +256,7 @@ def audit():
             else "PARTIAL"
         )
 
-        output = ROOT / "evidencias/cdc/stage5-cdc-consumer.json"
+        output = evidence_path(ROOT, "cdc/stage5-cdc-consumer.json")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(
             json.dumps(report, indent=2, ensure_ascii=False) + "\n",

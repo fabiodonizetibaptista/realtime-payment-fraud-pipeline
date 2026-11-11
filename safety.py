@@ -181,6 +181,30 @@ def run_with_teardown(work, teardown):
             primary_error.add_note("Teardown tambem falhou: " + type(cleanup_error).__name__)
 
 
+EVIDENCE_RUN_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+
+
+def evidence_path(root: Path, relative: str, environment: Mapping[str, str] | None = None) -> Path:
+    """Resolve o destino de uma evidencia, isolando cada execucao.
+
+    Sem EVIDENCE_RUN_ID, preserva o caminho historico em evidencias/.
+    Com EVIDENCE_RUN_ID, grava em evidencias/runs/<RUN_ID>/, sem tocar
+    nas evidencias de execucoes anteriores.
+    """
+    import os
+
+    source = os.environ if environment is None else environment
+    run_id = source.get("EVIDENCE_RUN_ID", "").strip()
+    relative_path = Path(relative)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        raise ValueError("EVIDENCE_PATH_INVALID")
+    if not run_id:
+        return root / "evidencias" / relative_path
+    if not EVIDENCE_RUN_ID_PATTERN.fullmatch(run_id):
+        raise ValueError("EVIDENCE_RUN_ID_INVALID")
+    return root / "evidencias" / "runs" / run_id / relative_path
+
+
 def write_utf8(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8", newline="\n")

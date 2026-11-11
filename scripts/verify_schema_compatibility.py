@@ -15,13 +15,16 @@ from pathlib import Path
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 sys.path.insert(0, str(ROOT / "src" / "consumer"))
 
 from audit_cdc import terraform_state
 from validate_cdc_avro import schema_registry_credentials
 
 SUBJECT = "payments.public.transactions-value"
-OUTPUT = ROOT / "evidencias/schemas/stage6-compatibility.json"
+OUTPUT = evidence_path(ROOT, "schemas/stage6-compatibility.json")
 
 
 def api_call(endpoint, key, secret, method, path, payload=None):
@@ -220,6 +223,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # --help e argumentos invalidos encerram antes de qualquer acesso remoto.
+    import argparse
+    argparse.ArgumentParser(description=(__doc__ or "").strip().splitlines()[0]).parse_args()
     try:
         raise SystemExit(main())
     except Exception as error:

@@ -6,6 +6,7 @@ Nunca imprime registros, IDs, endpoints ou credenciais.
 """
 
 import json
+import sys
 import os
 import subprocess
 import time
@@ -13,6 +14,9 @@ import uuid
 from pathlib import Path
 
 ROOT = Path.cwd()
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 TF = ROOT / "infra/terraform"
 SQL = ROOT / "sql/enrichment/04_temporal_join.sql"
 
@@ -499,7 +503,7 @@ finally:
         from datetime import datetime, timezone
         import hashlib
 
-        directory = ROOT / "evidencias" / "flink"
+        directory = evidence_path(ROOT, "flink")
         directory.mkdir(parents=True, exist_ok=True)
 
         sql_evidence = directory / "01_temporal_join.sql"

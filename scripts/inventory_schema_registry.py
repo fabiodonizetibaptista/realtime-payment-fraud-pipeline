@@ -15,6 +15,9 @@ from pathlib import Path
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 sys.path.insert(0, str(ROOT / "src" / "consumer"))
 
 from audit_cdc import resources, terraform_state
@@ -173,7 +176,7 @@ def main():
         "terraform_managed_schema_count": len(terraform_schemas),
     }
 
-    output = ROOT / "evidencias/schemas/stage6-schema-inventory.json"
+    output = evidence_path(ROOT, "schemas/stage6-schema-inventory.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n",

@@ -6,13 +6,17 @@ Nao registra credenciais, endpoints privados ou conteudo do State.
 """
 
 import json
+import sys
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 TF_DIR = ROOT / "infra" / "terraform"
-OUTPUT = ROOT / "evidencias" / "flink" / "stage7-compute-pool.json"
+OUTPUT = evidence_path(ROOT, "flink/stage7-compute-pool.json")
 
 EXPECTED_NAME = "payment-fraud-v2"
 EXPECTED_ID = "lfcp-gq50o2n"
@@ -154,7 +158,7 @@ def main():
     print("OBSERVED_CURRENT_CFU=0")
     print("FINANCIAL_COST_VERIFIED=False")
     print("SQL_WORKSPACE_ACCESS_RECORDED=True")
-    print("EVIDENCE_FILE=evidencias/flink/stage7-compute-pool.json")
+    print("EVIDENCE_FILE=" + OUTPUT.relative_to(ROOT).as_posix())
     print("REMOTE_CHANGES=False")
     print("SECRETS_PRINTED=False")
     print("STAGE7_EVIDENCE_GATE=PASS")

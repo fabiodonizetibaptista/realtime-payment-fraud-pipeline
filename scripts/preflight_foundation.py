@@ -18,7 +18,7 @@ TF_DIR = ROOT / "infra" / "terraform"
 
 sys.path.insert(0, str(ROOT))
 from scripts.cdc_stage_flags import configure_flags
-from safety import load_env_file
+from safety import evidence_path, load_env_file
 
 
 def fail(message):
@@ -294,7 +294,7 @@ def check_readiness(env):
 
     # Evidencia sanitizada, sem credenciais, endpoints ou
     # identificadores de recursos.
-    evidence = ROOT / "evidencias" / "window"
+    evidence = evidence_path(ROOT, "window")
     evidence.mkdir(parents=True, exist_ok=True)
     report = evidence / "foundation-preflight.txt"
 

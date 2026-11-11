@@ -9,12 +9,16 @@ Nenhum schema completo, segredo ou dado pessoal e registrado.
 """
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 SCHEMAS = ROOT / "schemas" / "registry"
-EVIDENCE = ROOT / "evidencias" / "schemas"
+EVIDENCE = evidence_path(ROOT, "schemas")
 
 SUBJECT = "payments.public.transactions-value"
 EXPECTED_TOPICS = (
@@ -131,7 +135,7 @@ def main():
     compatibility_evidence = {
         "evidence_type": "DERIVED_TEST_RESULT",
         "generated_at_utc": timestamp,
-        "source": "evidencias/schemas/stage6-compatibility.json",
+        "source": (EVIDENCE / "stage6-compatibility.json").relative_to(ROOT).as_posix(),
         "subject": SUBJECT,
         "tested_against_version": compatibility["original_version"],
         "compatibility": "BACKWARD",
@@ -209,6 +213,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # --help e argumentos invalidos encerram antes de qualquer acesso remoto.
+    import argparse
+    argparse.ArgumentParser(description=(__doc__ or "").strip().splitlines()[0]).parse_args()
     try:
         main()
     except Exception as error:

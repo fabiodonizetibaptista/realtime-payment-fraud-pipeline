@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TF = ROOT / "infra" / "terraform"
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import evidence_path, load_env_file
 
 
 def execute(command, cwd=ROOT):
@@ -223,7 +223,7 @@ def main():
             else "BLOCKED"
         )
 
-        evidence_dir = ROOT / "evidencias" / "cdc"
+        evidence_dir = evidence_path(ROOT, "cdc")
         evidence_dir.mkdir(parents=True, exist_ok=True)
         evidence_file = evidence_dir / "stage4-cdc-operational.json"
         evidence_file.write_text(
@@ -257,6 +257,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # --help e argumentos invalidos encerram antes de qualquer acesso remoto.
+    import argparse
+    argparse.ArgumentParser(description=(__doc__ or "").strip().splitlines()[0]).parse_args()
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:

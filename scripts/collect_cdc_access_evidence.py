@@ -15,7 +15,7 @@ import pg8000.dbapi
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import evidence_path, load_env_file
 
 COUNTS = {
     "public.customers": 200,
@@ -26,7 +26,7 @@ COUNTS = {
     "cdc_internal.heartbeat": 1,
 }
 
-OUTPUT = ROOT / "evidencias" / "security"
+OUTPUT = evidence_path(ROOT, "security")
 
 
 def connect(env, cdc=False):

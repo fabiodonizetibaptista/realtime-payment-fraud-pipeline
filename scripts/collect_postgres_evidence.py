@@ -15,7 +15,7 @@ import pg8000.dbapi
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import evidence_path, load_env_file
 
 EXPECTED = {
     "public.customers": 200,
@@ -37,7 +37,7 @@ REQUIRED_ENV = (
     "CDC_PGPASSWORD",
 )
 
-EVIDENCE_DIR = ROOT / "evidencias" / "database"
+EVIDENCE_DIR = evidence_path(ROOT, "database")
 
 
 def main():

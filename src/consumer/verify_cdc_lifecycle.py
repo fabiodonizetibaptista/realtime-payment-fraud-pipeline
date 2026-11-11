@@ -19,6 +19,9 @@ from pathlib import Path
 from confluent_kafka import Consumer, TopicPartition
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from safety import evidence_path  # noqa: E402
 sys.path.insert(0, str(ROOT / "src" / "consumer"))
 
 from audit_cdc import kafka_credentials, terraform_state
@@ -27,7 +30,7 @@ from validate_cdc_avro import create_deserializers, decode_message
 TOPIC = "payments.public.transactions"
 BASELINE = ROOT / ".local" / "stage5-cdc-baseline.json"
 SCENARIO = ROOT / ".local" / "stage5-scenario.json"
-EVIDENCE = ROOT / "evidencias/cdc/stage5-cdc-lifecycle.json"
+EVIDENCE = evidence_path(ROOT, "cdc/stage5-cdc-lifecycle.json")
 
 
 def save_private(path, data):
