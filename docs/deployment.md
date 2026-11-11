@@ -15,7 +15,7 @@ O processamento real depende de serviços externos da **Aiven** e da **Confluent
 
 ## Configurações essenciais
 
-Não versionar `.env`. Usar variáveis de ambiente e/ou `.env` local não publicado. `AIVEN_TOKEN`, `CONFLUENT_CLOUD_API_KEY`, `CONFLUENT_CLOUD_API_SECRET` são credenciais de provedores. O Terraform exige também `TF_VAR_aiven_project` e `TF_VAR_aiven_pg_service_name`, que identificam um **projeto Aiven pré-existente** e o nome desejado do serviço PostgreSQL. O recurso `aiven_pg.payments` cria o serviço, **não cria a conta nem o projeto Aiven**.
+Não versionar `.env`. Usar variáveis de ambiente e/ou `.env` local não publicado. `AIVEN_TOKEN`, `CONFLUENT_CLOUD_API_KEY`, `CONFLUENT_CLOUD_API_SECRET` são credenciais de provedores. O Terraform exige `TF_VAR_aiven_project`, que identifica o **nome técnico de um projeto Aiven pré-existente** (não o ID da organização). `TF_VAR_aiven_pg_service_name` é opcional: por padrão o serviço PostgreSQL recebe o nome `payments-postgres`, desde que esteja disponível no projeto. O recurso `aiven_pg.payments` cria o serviço, **não cria a conta nem o projeto Aiven**.
 
 Os acessos de Kafka/Schema Registry e as variáveis `TF_VAR_foundation_*` podem ser disponibilizados após o primeiro provisionamento via `scripts/export_foundation_env.py`. Não imprimir segredos ou conteúdo bruto de State e planos.
 
@@ -52,4 +52,4 @@ Depois da implantação, comprovar a existência de recursos na conta correta, o
 
 ## Limitantes de portabilidade conhecidos
 
-O README e alguns comentários históricos ainda mencionam Codespaces e versões internas. Isso precisa ser saneado na revisão editorial final. A compatibilidade operacional completa em Windows, Linux e macOS exige execução dos respectivos procedimentos de bootstrap/CLI em cada plataforma; não está comprovada apenas pelos testes unitários.
+Referências a Codespaces descrevem apenas a conveniência de execução remota; não configuram dependência nem requisito de sistema operacional. Evite copiar identificadores, State ou credenciais de uma execução anterior. A compatibilidade operacional completa em Windows, Linux e macOS exige execução dos respectivos procedimentos de bootstrap/CLI em cada plataforma; não está comprovada apenas pelos testes unitários.

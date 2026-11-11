@@ -68,7 +68,7 @@ Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py
 python -m scripts.bootstrap_local init-env
 ```
 
-**Ferramenta ausente ou fora do `PATH`?** Execute `python -m scripts.bootstrap_local repair-tools` com o Python do seu `.venv`; o comando identifica versões ausentes/incompatíveis e indica como recuperar Terraform e Confluent CLI em cada sistema. Não altera seu computador. Consulte [recuperação multiplataforma](docs/local-bootstrap.md#recuperação-guiada-quando-uma-cli-está-ausente-ou-abaixo-do-mínimo).
+**Ferramenta ausente ou fora do `PATH`?** Execute `python -m scripts.bootstrap_local repair-tools` com o Python 3.12+ disponível; esse diagnóstico orienta a instalação e a configuração do `PATH`, sem alterar o computador. Consulte [recuperação multiplataforma](docs/local-bootstrap.md#recuperação-guiada-quando-uma-cli-está-ausente-ou-abaixo-do-mínimo).
 
 Antes de provisionar, valide os nomes de configuração presentes com `python -m scripts.check_configuration foundation`; depois da Foundation use `python -m scripts.check_configuration pipeline`. Diagnósticos adicionais: `postgres` e `cdc`. Nenhum desses comandos acessa a nuvem ou imprime credenciais.
 
@@ -113,7 +113,7 @@ Forneça credenciais por variáveis de ambiente do sistema ou por `.env` **local
 
 **Antes da Foundation:** crie suas próprias contas/projeto Aiven e organização Confluent Cloud com as permissões exigidas; gere as chaves administrativas conforme [o guia de implantação](docs/deployment.md) e faça `confluent login` em um terminal privado. O login da CLI não substitui as API Keys usadas pelo Terraform. Confira o contexto ativo antes de consultar ou alterar recursos. Não copie identificadores ou credenciais de execuções anteriores.
 
-**Na Aiven, crie apenas a conta, um projeto e um token de API. Não crie o PostgreSQL manualmente.** Informe `AIVEN_TOKEN` e `TF_VAR_aiven_project` no `.env` local; `aiven_project` é o nome técnico do projeto (não o ID da organização). O Terraform escolhe o tipo PostgreSQL e o plano `free-1-1gb` e usa o nome padrão `payments-postgres` para o serviço. Esse nome deve estar livre no projeto; se não estiver, defina `TF_VAR_aiven_pg_service_name` para outro nome disponível. A aplicação depende de aprovação, disponibilidade do plano e permissões na conta.
+**Na Aiven, crie apenas a conta, um projeto e um token de API. Não crie o PostgreSQL manualmente.** O projeto deve estar na organização à qual o token tem acesso, e o usuário do token deve ter permissão para criar serviços. A interface pode apresentar diversos tipos de serviço; não selecione nenhum deles manualmente para a reprodução. O recurso `aiven_pg` fixa o tipo PostgreSQL no Terraform. Informe `AIVEN_TOKEN` e `TF_VAR_aiven_project` no `.env` local; `aiven_project` é o nome técnico do projeto (não o ID da organização). O Terraform escolhe o tipo PostgreSQL e o plano `free-1-1gb` e usa o nome padrão `payments-postgres` para o serviço. Esse nome deve estar livre no projeto; se não estiver, defina `TF_VAR_aiven_pg_service_name` para outro nome disponível. A aplicação depende de aprovação, disponibilidade do plano e permissões na conta.
 
 **O projeto Aiven deve existir antes da implantação; o Terraform cria o serviço PostgreSQL, não a conta/projeto Aiven.** As credenciais Kafka/Schema Registry geradas pelo Terraform podem ser exportadas para o `.env` local usando:
 
@@ -157,7 +157,7 @@ python lab.py review-plan --pipeline
 python lab.py apply-pipeline --confirm-pipeline
 ```
 
-A inclusão do conector CDC é uma operação faturável e requer autorização adicional `--allow-cdc`, **somente** na janela em que se pretende ativá-lo. Consulte [implantação](docs/deployment.md) antes dessa opção. `plan-pipeline` é distinto de `plan` e não substitui a revisão de ambos os planos.
+A inclusão do conector CDC pode gerar cobrança e requer autorização adicional `--allow-cdc`, **somente** na janela em que se pretende ativá-lo. Para efetivar uma aplicação que inclua o CDC, após revisão do plano, use `python lab.py apply-pipeline --confirm-pipeline --allow-cdc`; sem essa opção o gate deve bloquear a criação do conector. Consulte [implantação](docs/deployment.md) antes dessa opção. `plan-pipeline` é distinto de `plan` e não substitui a revisão de ambos os planos.
 
 A implantação depende de credenciais válidas e de configurações específicas da conta. Identificadores de ambiente, cluster e Compute Pool devem ser obtidos dos recursos provisionados, e não copiados de execuções anteriores.
 
@@ -264,6 +264,8 @@ scripts/fraud_stream.py
 sql/fraud_detection/continuous/02_inspect_matches.sql
 ```
 
+**Consultas operacionais do executor Flink:** depois da criação autorizada do statement, use `python -m scripts.fraud_stream status` e `python -m scripts.fraud_stream inspect` para obter estado e resultados. O subcomando `inspect-null` auxilia a identificação de campos ausentes. Esses comandos consultam serviços remotos; não substituem a verificação da origem e do Kafka.
+
 **O que comprova o funcionamento de ponta a ponta:**
 
 - As transações sintéticas foram persistidas no PostgreSQL.
@@ -316,6 +318,20 @@ Checklist de encerramento:
 3. Confira o estado remoto dos conectores e demais recursos sujeitos a cobrança.
 4. Consulte o billing para verificar o consumo associado à janela de execução.
 5. Preserve as evidências sanitizadas e os registros necessários à auditoria da execução.
+
+**Destruição isolada do conector CDC:** o repositório possui `scripts/teardown_cdc_connector.py`, separado do teardown geral. Após confirmar a conta, o State e a janela de faturamento, consulte primeiro a interface não destrutiva:
+
+```text
+python scripts/teardown_cdc_connector.py
+```
+
+Se a remoção do conector estiver efetivamente autorizada, o comando que executa o *plan* de destruição restrito e aplica somente a remoção do conector é:
+
+```text
+python scripts/teardown_cdc_connector.py --execute
+```
+
+**O segundo comando destrói recurso remoto e não deve ser executado durante a preparação ou a validação local.** O script exige `CDC_PGPASSWORD`, inspeciona o State e bloqueia mudanças distintas da exclusão do endereço `confluent_connector.payments_cdc[0]`. Se o conector não estiver no State atual, ele não o remove de outra conta ou de outro State. Após a execução autorizada, confira a ausência do conector na conta ativa e os recursos remanescentes; não trate o fim do processo como prova instantânea de encerramento da cobrança.
 
 **Não exclua o ambiente de execução ou o State local do Terraform antes de confirmar o encerramento dos recursos remotos administrados por esse State.** A remoção do ambiente local sem essa verificação pode dificultar a administração ou a destruição dos recursos restantes.
 
