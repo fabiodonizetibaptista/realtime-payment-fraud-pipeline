@@ -1,0 +1,8 @@
+{
+  "aggregations": [{ "metric": "io.confluent.kafka.server/consumer_lag_offsets" }],
+  "filter": { "field": "resource.kafka.id", "op": "EQ", "value": "__KAFKA_ID__" },
+  "group_by": ["metric.consumer_group_id"],
+  "granularity": "PT1M",
+  "intervals": ["__START_UTC__/__END_UTC__"],
+  "limit": 1000
+}
