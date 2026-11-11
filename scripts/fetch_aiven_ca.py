@@ -4,6 +4,7 @@ Somente leitura na API Aiven.
 Nunca imprime token, certificado ou resposta bruta da API.
 """
 
+import argparse
 import json
 import re
 import os
@@ -121,9 +122,18 @@ def main():
     return 0
 
 
+def cli(argv=None):
+    """Processa --help antes de carregar credenciais ou acessar a API."""
+    parser = argparse.ArgumentParser(
+        description="Recupera o certificado CA do projeto Aiven configurado localmente."
+    )
+    parser.parse_args(argv)
+    return main()
+
+
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        raise SystemExit(cli())
     except Exception as error:
         print("ERROR_TYPE=", type(error).__name__)
         print("CA_GATE=BLOCKED")
