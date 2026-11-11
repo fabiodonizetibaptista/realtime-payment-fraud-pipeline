@@ -94,3 +94,19 @@ O verificador nao testa a existencia do arquivo CA ou permissões remotas;
 use o preflight PostgreSQL especifico depois de provisionar o banco.
 No Windows e em outros ambientes, cada clone deve ter seu proprio `.env` local
 (ou segredos de ambiente), sem copiar o arquivo ao Git.
+
+### Conflito de variaveis de ambiente PostgreSQL (Windows e outros sistemas)
+
+O `scripts/export_postgres_env.py` registra no `.env` os parametros do PostgreSQL
+provisionado pelo Terraform State deste clone. Se uma variavel de processo
+(`PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` ou `PG_CA`) tiver
+valor diferente daquele presente no `.env`, o `bootstrap_postgres.py` bloqueia
+a conexao com `POSTGRES_ENV_CONFLICT:<NOME_DA_CHAVE>` sem exibir valores.
+Isso impede conexao silenciosa a um servico de execucoes anteriores.
+
+No PowerShell, inspecione apenas a presenca das variaveis com
+`Get-ChildItem Env:PG* | Select-Object -ExpandProperty Name`, sem imprimir valores.
+Para remover somente uma variavel herdada da sessao atual, use
+`Remove-Item Env:PGHOST -ErrorAction SilentlyContinue`. Em seguida, execute
+`python scripts/bootstrap_postgres.py check`. Nao altere a configuracao TLS
+para contornar erros.

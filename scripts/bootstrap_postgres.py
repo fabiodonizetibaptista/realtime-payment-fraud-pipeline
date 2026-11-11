@@ -45,9 +45,17 @@ def read_local_env():
 
 def connect():
     stored = read_local_env()
+    # Evita que variaveis herdadas de outra execucao substituam silenciosamente
+    # os valores exportados para o .env deste clone. Nao imprime os valores.
+    # Um override deliberado deve ser feito em um ambiente isolado e coerente;
+    # divergencias entre as duas fontes bloqueiam a conexao antes de abrir a rede.
     for key in ("PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PG_CA"):
-        if os.environ.get(key):
-            stored[key] = os.environ[key]
+        inherited = os.environ.get(key)
+        configured = stored.get(key)
+        if inherited and configured and inherited != configured:
+            raise RuntimeError(f"POSTGRES_ENV_CONFLICT:{key}")
+        if inherited and not configured:
+            stored[key] = inherited
     # Usa credenciais exportadas dos recursos gerenciados,
     # evitando hosts e senhas fixos no codigo.
     keys = ("PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PG_CA")
