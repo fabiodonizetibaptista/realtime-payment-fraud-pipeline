@@ -72,10 +72,14 @@ class SequencingTests(unittest.TestCase):
         with patch('scripts.cdc_stage_flags.managed_addresses', side_effect=RuntimeError('UNAVAILABLE')):
             with self.assertRaises(RuntimeError): configure_flags({})
 
-    def test_subject_config_is_conditional_and_protected(self):
+    def test_subject_config_is_conditional_and_destroyable_only_by_teardown(self):
+        # prevent_destroy=true impedia o teardown verificavel (plan -destroy
+        # falha). A protecao durante a execucao e coberta pelos testes de
+        # gate em test_subject_policy_protection.py.
         hcl = (ROOT / 'infra/terraform/cdc-subject-compatibility.tf').read_text(encoding='utf-8')
         self.assertIn('count = var.enable_subject_compatibility ? 1 : 0', hcl)
-        self.assertIn('prevent_destroy = true', hcl)
+        self.assertIn('prevent_destroy = false', hcl)
+        self.assertNotIn('prevent_destroy = true', hcl)
         self.assertIn('default     = false', (ROOT/'infra/terraform/variables.tf').read_text(encoding='utf-8'))
 
 

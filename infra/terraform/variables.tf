@@ -133,7 +133,7 @@ variable "cdc_connector_name" {
 }
 
 # Fica desligado ate o subject existir e o operador aprovar o plano da politica.
-# Depois da criacao, manter ativo: prevent_destroy bloqueia destruicao acidental.
+# Depois da criacao, manter ativo: os gates de etapa bloqueiam exclusao acidental.
 variable "enable_subject_compatibility" {
   description = "Controla a politica BACKWARD especifica do subject CDC."
   type        = bool
