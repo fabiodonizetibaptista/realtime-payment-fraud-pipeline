@@ -106,11 +106,12 @@ variable "aiven_project" {
   }
 }
 
-# Nome parametrizavel para preservar o recurso existente
-# e permitir implantacoes independentes.
+# Nome padrao para reproducoes do zero. Pode ser sobrescrito caso ja exista
+# um servico com o mesmo nome no projeto Aiven escolhido.
 variable "aiven_pg_service_name" {
-  description = "Nome do servico PostgreSQL no projeto Aiven."
+  description = "Nome do servico PostgreSQL no projeto Aiven (opcional; padrao para clones independentes)."
   type        = string
+  default     = "payments-postgres"
 
   validation {
     condition     = length(trimspace(var.aiven_pg_service_name)) > 0

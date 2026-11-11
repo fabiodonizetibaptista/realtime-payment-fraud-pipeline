@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PHASE_KEYS = {
     "foundation": (
         "AIVEN_TOKEN", "CONFLUENT_CLOUD_API_KEY", "CONFLUENT_CLOUD_API_SECRET",
-        "TF_VAR_aiven_project", "TF_VAR_aiven_pg_service_name",
+        "TF_VAR_aiven_project",
     ),
     "pipeline": (
         "AIVEN_TOKEN", "CONFLUENT_CLOUD_API_KEY", "CONFLUENT_CLOUD_API_SECRET",
