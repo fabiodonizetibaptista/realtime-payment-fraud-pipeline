@@ -62,11 +62,37 @@ O projeto exige **Python 3.12+**, **Terraform 1.16+** e **Confluent CLI 4.81+** 
 python -m scripts.bootstrap_local instructions
 ```
 
-Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py -3.12`, conforme disponibilidade). O assistente **não instala** softwares nem acessa a nuvem; fornece links oficiais e instruções de `PATH`. Depois de instalar as ferramentas, execute `python -m scripts.check_environment`. Para criar um `.env` local a partir do modelo **sem substituir arquivo existente**, execute:
+Use o Python 3.12+ instalado para executar esse comando (no Windows pode ser `py -3.12`, conforme disponibilidade). O assistente de diagnóstico **não instala** softwares nem acessa a nuvem; fornece links oficiais e instruções de `PATH`. Depois de instalar as ferramentas, execute `python -m scripts.check_environment`. Para criar um `.env` local a partir do modelo **sem substituir arquivo existente**, execute:
 
 ```text
 python -m scripts.bootstrap_local init-env
 ```
+
+**Instalação simplificada da Confluent CLI no Windows AMD64 (PowerShell, após o clone):**
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_confluent_cli.ps1
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Falha na instalação da Confluent CLI."
+}
+
+# Disponibiliza a CLI imediatamente no terminal atual.
+$cliPath = Join-Path $env:LOCALAPPDATA "Programs\ConfluentCLI"
+
+if (-not (Test-Path (Join-Path $cliPath "confluent.exe"))) {
+    throw "Executável da Confluent CLI não encontrado."
+}
+
+if ($cliPath -notin ($env:Path -split ';')) {
+    $env:Path = "$cliPath;$env:Path"
+}
+
+confluent version
+python -m scripts.check_environment
+```
+
+O instalador versionado baixa **somente** o ZIP oficial da Confluent, valida o SHA-256 publicado nos metadados do release, instala para o usuário atual e configura o `PATH`, sem privilégios administrativos. Interrompe a instalação caso não consiga verificar o hash. Leia o script antes de executar; não utilize `curl | iex`. A instalação da CLI **não exige conta nem API Keys**. Para Linux/macOS, siga os comandos de gerenciadores de pacotes oficiais no [guia da Confluent](https://docs.confluent.io/confluent-cli/current/install.html) e valide com `confluent version`. Se a CLI já estiver instalada e cumprir a versão mínima, ignore esta instalação.
 
 **Ferramenta ausente ou fora do `PATH`?** Execute `python -m scripts.bootstrap_local repair-tools` com o Python 3.12+ disponível; esse diagnóstico orienta a instalação e a configuração do `PATH`, sem alterar o computador. Consulte [recuperação multiplataforma](docs/local-bootstrap.md#recuperação-guiada-quando-uma-cli-está-ausente-ou-abaixo-do-mínimo).
 
@@ -110,6 +136,20 @@ Forneça credenciais por variáveis de ambiente do sistema ou por `.env` **local
 | `TF_VAR_aiven_project` | Projeto Aiven **preexistente**, onde será criado o PostgreSQL. |
 | `TF_VAR_aiven_pg_service_name` | **Opcional.** Terraform usa `payments-postgres` por padrão; configure outro nome somente se já existir um serviço com esse nome no projeto. |
 | `TF_VAR_foundation_*` | Parâmetros e chaves gerados/obtidos após a criação da Foundation, quando necessários. |
+
+**Ordem mínima de autenticação (após instalar a CLI):** crie o `.env` local e obtenha as credenciais administrativas **antes** de `lab.py plan`/`apply`. A instalação de ferramentas não necessita dessas chaves.
+
+1. **Aiven (console):** crie conta e projeto, gere um token em **User information > Tokens** e preencha `AIVEN_TOKEN` e `TF_VAR_aiven_project` no `.env`. Não instale outra CLI e não crie PostgreSQL manualmente.
+2. **Confluent Cloud (CLI):** crie a conta/organização, execute `confluent login` e confira a organização/contexto selecionados. Em seguida, **quando autorizado a criar uma credencial**:
+
+   ```text
+   confluent api-key create --resource cloud --description "fraud-pipeline-reproduction"
+   ```
+
+   Copie a chave e o segredo exibidos **uma única vez**, diretamente para `CONFLUENT_CLOUD_API_KEY` e `CONFLUENT_CLOUD_API_SECRET` no `.env` local; **não compartilhe nem redirecione a saída para logs**. A criação requer permissão na organização e a chave deve possuir somente os privilégios necessários ao provisionamento. `confluent login` sozinho **não substitui** essa chave para Terraform. O comando cria credenciais, não serviços de infraestrutura.
+3. **Depois da Foundation:** `python -m scripts.export_foundation_env` obtém os outputs de recursos criados (Kafka/Schema Registry e parâmetros de conexão quando disponíveis). **Não crie antecipadamente** chaves de clusters ainda inexistentes nem copie IDs de outra instalação.
+
+Documentação: [criar API Key da Confluent](https://docs.confluent.io/confluent-cli/current/command-reference/api-key/confluent_api-key_create.html) e [criar token Aiven](https://aiven.io/docs/platform/howto/create_authentication_token).
 
 **Antes da Foundation:** crie suas próprias contas/projeto Aiven e organização Confluent Cloud com as permissões exigidas; gere as chaves administrativas conforme [o guia de implantação](docs/deployment.md) e faça `confluent login` em um terminal privado. O login da CLI não substitui as API Keys usadas pelo Terraform. Confira o contexto ativo antes de consultar ou alterar recursos. Não copie identificadores ou credenciais de execuções anteriores.
 
