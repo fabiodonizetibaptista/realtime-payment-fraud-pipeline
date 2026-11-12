@@ -29,6 +29,15 @@ Dedicated; planos aplicados não removidos; ordem de destruição das ACLs;
 statements Flink fora do teardown; identidade de métricas manual; baseline do
 CDC esquecido.
 
+## Desvios da execução guiada só pela documentação (Codespace, mesmo operador)
+
+Cada ponto em que o operador precisou de ajuda além do texto é um defeito de
+documentação, corrigido e registrado aqui.
+
+| # | Etapa | O que não estava claro | Correção |
+|---|---|---|---|
+| D1 | Ambiente | O roteiro misturava Codespaces e máquina própria num parágrafo; o operador, já no Codespace, não sabia se devia criar venv e rodar `pip` | Seção "Ambiente" dividida em Opção A (Codespaces: nada para instalar, só conferir versões) e Opção B (máquina própria) |
+
 ## Objetivo e regras de execução
 
 Registrar e resolver de modo rastreável as lacunas encontradas por um avaliador independente ao tentar reproduzir o pipeline a partir de um ambiente limpo. Este documento **não é evidência de execução ponta a ponta**, nem confirma correção de nenhum item.

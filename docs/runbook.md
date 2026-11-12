@@ -10,20 +10,44 @@ Cada passo traz o critério de **PASS** e o que fazer se falhar.
 - Nenhum comando imprime senhas ou chaves. **Nunca cole o conteúdo do `.env`,
   do State (`*.tfstate`) ou de planos (`*.tfplan`) em issues, chats ou commits.**
 
-## Ambiente
+## Ambiente — escolha **uma** opção
 
-O caminho recomendado é o **GitHub Codespaces** (ou o devcontainer local no
-Docker Desktop): o [`.devcontainer`](../.devcontainer) instala Python 3.12,
-Terraform 1.16.2, Confluent CLI 4.81 (com checksum) e o `requirements.txt`.
-Codespaces é opcional: em máquina própria, instale Python 3.12+, Terraform
-1.16+ e Confluent CLI 4.81+ conforme [local-bootstrap.md](local-bootstrap.md) e:
+### Opção A — GitHub Codespaces (recomendada; nada para instalar)
+
+1. No GitHub, abra o repositório → botão **Code** → aba **Codespaces** →
+   **Create codespace** (na branch que você quer executar).
+2. Espere a criação terminar: o [`.devcontainer`](../.devcontainer) instala
+   sozinho Python 3.12, Terraform 1.16.2, Confluent CLI 4.81 (com checksum) e
+   as dependências do `requirements.txt`. **Não crie venv nem rode `pip`.**
+3. No terminal do Codespace, confira:
+
+   ```bash
+   python --version      # 3.12.x
+   terraform version     # 1.16.2 ou maior
+   confluent version     # 4.81.0 ou maior
+   ```
+
+   Se algum faltar, a instalação automática falhou: rode
+   `python .devcontainer/install_tools.py` e confira de novo.
+
+O devcontainer também funciona localmente no VS Code com Docker Desktop
+(**Dev Containers: Reopen in Container**), com os mesmos passos 2 e 3.
+
+### Opção B — máquina própria (Windows, Linux ou macOS)
+
+Instale Python 3.12+, Terraform 1.16+ e Confluent CLI 4.81+ conforme
+[local-bootstrap.md](local-bootstrap.md). Depois, na raiz do repositório:
 
 ```bash
-python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\Activate.ps1
+python -m venv .venv
+. .venv/bin/activate                 # Windows (PowerShell): .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-Os comandos abaixo valem para os dois shells. Só quatro coisas mudam:
+### Shell
+
+Os comandos abaixo valem para bash (Codespaces, Linux, macOS) e PowerShell.
+Só quatro coisas mudam:
 
 | Ação | Linux/macOS/Codespaces (bash) | Windows (PowerShell) |
 |---|---|---|
