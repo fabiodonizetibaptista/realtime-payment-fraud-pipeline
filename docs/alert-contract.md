@@ -69,16 +69,22 @@ com tolerância padrão de 180 milissegundos para desordem.
 A janela de 60 segundos define a regra de fraude;
 não representa o atraso do watermark.
 
-Na execução integral, confirmar:
-- [ ] Estratégia efetiva com SHOW CREATE TABLE
-- [ ] Atributo ROWTIME reconhecido pelo Flink
-- [ ] CURRENT_WATERMARK observado
-- [ ] Statement de detecção em RUNNING
-- [ ] Correspondência registrada no destino
+Execução integral (run-20261111, 2026-11-12):
+- [x] `SHOW CREATE TABLE` inspecionado pelo `flink-setup` (PK e changelog)
+- [x] Atributo `$rowtime` aceito no temporal join e no `MATCH_RECOGNIZE`
+- [ ] `CURRENT_WATERMARK` não foi consultado isoladamente
+- [x] Statement de detecção em RUNNING
+- [x] Correspondência do cenário registrada no destino
 
 Um watermark NULL inicial não comprova falha.
 A ausência de alertas também exige verificar chegada
 de eventos, progresso temporal e condições do padrão.
+
+**Consequência observada de usar `$rowtime`:** o tempo é o da chegada ao
+Kafka. No snapshot inicial os 2000 registros chegam quase juntos e todo cartão
+do seed com 3 ou mais transações gera alerta. Um consumidor real deve
+descartar alertas do snapshot ou a regra deve usar `event_time` com watermark
+próprio. A verificação do desafio filtra pelos IDs do cenário por isso.
 
 ## Evidência e privacidade
 
@@ -88,4 +94,6 @@ ou identificadores mascarados nos relatórios.
 
 ## Estado
 
-PREPARADO LOCALMENTE — VALIDACAO REAL PENDENTE.
+VALIDADO NO FLINK REAL (run-20261111): alerta do cenário emitido em
+`fraud.pattern_matches` com os três IDs; evidência em
+`evidencias/runs/run-20261111/flink/fraud-scenario-alert.json`.

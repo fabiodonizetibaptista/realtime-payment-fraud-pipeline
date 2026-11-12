@@ -1,5 +1,22 @@
 # Evidências — Observabilidade, segurança e custos
 
+## Execução run-20261111 (2026-11-12)
+
+Coletado por `collect_operations_evidence.py` (escopo explícito) e
+`collect_metrics_evidence.py`; arquivos em
+[`evidencias/runs/run-20261111/`](../../evidencias/runs/run-20261111/).
+
+| Item | Resultado |
+|---|---|
+| Cluster | `desafio-basic`, BASIC, UP (data de criação não retornada pela CLI; apply da fundação ≈ 00:40 UTC) |
+| Compute pool | `payment-fraud-v2`, PROVISIONED, `max_cfu=10` |
+| Identidades | 7 do projeto (+1 da conta, fora do escopo); 14 ACLs — CREATE 2, DESCRIBE 2, DESCRIBE_CONFIGS 1, READ 5, WRITE 4 |
+| Metrics API | `received_bytes`: 43 pontos/min, pico 180.626 B/min, total 233.839 B; lag por grupo sem série |
+| Billing | Sem linhas no dia da janela no momento da coleta → **pendente** (reconsultar após 48–72 h) |
+| Teardown | State vazio; sem environment, service accounts ou conector do projeto |
+
+O conteúdo abaixo é a inspeção **anterior** (09/11/2026), mantida como histórico.
+
 ## 1. Contexto
 
 - Ambiente inspecionado: desafio-final

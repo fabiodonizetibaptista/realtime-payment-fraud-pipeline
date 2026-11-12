@@ -7,6 +7,28 @@
 **Branch proposta para correções:** `fix/reproduction-readiness`
 **Situação da auditoria independente:** levantamento inicial, sem provisionamento informado.
 
+## Situação em 2026-11-12 (branch `chore/final-delivery`)
+
+| Gate | Critério | Situação |
+|---|---|---|
+| **G-ENV** | Clone limpo no devcontainer: `lab.py setup`, `test`, `check_configuration foundation` | **Pendente** — validado em Windows (PowerShell); devcontainer será exercitado no Codespace da próxima execução |
+| **G-DIO** | Execução J0–J6 com evidência real; README no modelo DIO; sem segredos nem marcadores do modelo sem preencher; custo registrado | **Atendido**, exceto custo final (billing pendente) — run-20261111 |
+| **G-REPRO** | Alguém sobe J0–J6 seguindo **só** a documentação | **Não executado.** Próximo passo: o mesmo operador, em Codespace limpo, sem orientação além de [runbook.md](../runbook.md) (registrado como "mesmo operador"); reprodução por outra pessoa/conta continua não executada |
+
+Lacunas L1–L8 abaixo: L1 (README reescrito em UTF-8), L3, L4 e L5 (comandos
+de apply, Flink, cenários e teardown em [runbook.md](../runbook.md)) e L6
+(seção "Contas" do roteiro) estão **corrigidas na documentação**; L7 depende
+do G-ENV; L8 — auditoria de segredos na árvore e no histórico sem achados,
+evidências por execução em `evidencias/runs/<id>/`.
+
+A run-20261111 revelou 11 defeitos corrigidos com testes: apply do conector
+sem `.env`; extras Avro ausentes no `requirements.txt`; `changelog.mode`
+`retract` inferido em instalação limpa; inspeção de alerta sem filtro do
+cenário; coleta usando o environment ativo da CLI; comandos de lag só para
+Dedicated; planos aplicados não removidos; ordem de destruição das ACLs;
+statements Flink fora do teardown; identidade de métricas manual; baseline do
+CDC esquecido.
+
 ## Objetivo e regras de execução
 
 Registrar e resolver de modo rastreável as lacunas encontradas por um avaliador independente ao tentar reproduzir o pipeline a partir de um ambiente limpo. Este documento **não é evidência de execução ponta a ponta**, nem confirma correção de nenhum item.

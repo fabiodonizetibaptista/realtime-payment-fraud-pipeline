@@ -1,59 +1,54 @@
 # Validação — Detecção de padrão com MATCH_RECOGNIZE
 
-## 1. Identificação
+## Identificação
 
-- SQL: sql/fraud_detection/pattern/01_match_recognize.sql
-- Execução: PENDENTE — validação remota não registrada
-- Commit executado: PENDENTE
-- Data da execução: PENDENTE
+- SQL de referência: `sql/fraud_detection/pattern/01_match_recognize.sql`
+- SQL executado no Flink (contínuo): `sql/fraud_detection/continuous/01_continuous_matches.sql`
+- Execução real: **run-20261111**, 2026-11-12 (UTC), branch `chore/final-delivery`
+- Evidência: [`evidencias/runs/run-20261111/flink/fraud-scenario-alert.json`](../../evidencias/runs/run-20261111/flink/fraud-scenario-alert.json)
 
-## 2. SQL integral executado
+## Regra
 
-Fonte versionada:
-`sql/fraud_detection/pattern/01_match_recognize.sql`
+`MATCH_RECOGNIZE` com `PARTITION BY card_id`, `ORDER BY transaction_rowtime`,
+`PATTERN (T{3})`, `WITHIN INTERVAL '60' SECOND`, `DEFINE T AS T.amount > 0` e
+`AFTER MATCH SKIP PAST LAST ROW`, sobre transações enriquecidas pelo temporal
+join e com `card_id IS NOT NULL`.
 
-- [ ] Arquivo submetido integralmente ao Flink
-- [ ] SQL executado corresponde ao commit registrado
-- [ ] Identificadores de catálogo/database resolvidos
+## Resultado no Flink real
 
-## 3. Estado do statement
+| Cenário | Esperado | Resultado (run-20261111) |
+|---|---|---|
+| 3 transações positivas no mesmo cartão em < 60 s | 1 correspondência com os 3 IDs, em ordem | **PASS** — `FRAUD_SEQUENCE_MATCHED=True`, `FRAUD_MATCHES_FOR_SCENARIO=1` |
+| 1 transação legítima em outro cartão | Nenhuma correspondência que a contenha | **PASS** — `LEGITIMATE_IN_ANY_MATCH=False` |
+| Registros sem cartão | Fora da detecção | **PASS** — `inspect-null`: `ROWS_OBSERVED=0` |
 
-- Statement ID: PENDENTE
-- Estado retornado pelo Flink: PENDENTE
-- Consulta aceita: PENDENTE
-- Evidência técnica: PENDENTE
+A verificação (`python -m scripts.fraud_stream verify-scenario`, chamada pelo
+`fraud_scenarios execute`) consulta somente as correspondências que contêm os
+IDs sintéticos do cenário e grava apenas booleanos.
 
-## 4. Resultados observados
+## Cenários só testados localmente
 
-Registrar somente identificadores sintéticos ou anonimizados.
+Avaliador Python de referência (`tests/`), **não executados no Flink**:
 
-| card_id | first_rowtime | last_rowtime | transaction_count | Resultado |
-|---|---|---|---|---|
-| PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE |
+| Cenário | Esperado | Teste local |
+|---|---|---|
+| 3 transações em 45 s | Correspondência | PASS |
+| 3 transações em exatamente 60 s | Correspondência | PASS |
+| 3 transações em 61 s | Sem correspondência | PASS |
+| Cartões diferentes | Sem mistura | PASS |
+| `amount = 0` ou negativo | Não satisfaz | PASS |
+| 6 elegíveis | 2 grupos sem reutilização | PASS |
+| 4 elegíveis | 1 grupo de 3 | PASS |
 
-## 5. Cenários de validação
+## Observação: tempo do evento
 
-| Cenário | Resultado esperado | Teste local | Flink real |
-|---|---|---|---|
-| 3 transações em 45 segundos | Correspondência | PASS | PENDENTE |
-| 3 transações em exatamente 60 segundos | Correspondência | PASS | PENDENTE |
-| 3 transações em 61 segundos | Sem correspondência | PASS | PENDENTE |
-| Transações de cartões diferentes | Sem mistura entre cartões | PASS | PENDENTE |
-| Transação com amount = 0 | Não satisfaz o padrão | PASS | PENDENTE |
-| Transação com amount negativo | Não satisfaz o padrão | PASS | PENDENTE |
-| 6 transações elegíveis | 2 grupos sem reutilização | PASS | PENDENTE |
-| 4 transações elegíveis | 1 grupo de 3 | PASS | PENDENTE |
+A regra ordena por `$rowtime`, o horário em que o evento chegou ao Kafka, e não
+por `event_time`. No snapshot inicial os 2000 registros chegam quase juntos, então
+**todo cartão do seed com 3 ou mais transações gera correspondência** — por isso
+`fraud_stream inspect` (com `LIMIT 50`) mostra linhas antes mesmo do cenário e
+não serve como prova. A prova é a verificação dirigida acima. Para uso real, a
+regra deveria ordenar por `event_time` com watermark próprio, ou ignorar o
+snapshot (ver [alert-contract.md](../alert-contract.md)).
 
-Os testes locais utilizam um avaliador Python de referência.
-PASS local não constitui evidência de execução no Flink.
-
-## 6. Gate de conclusão
-
-- [ ] Statement aceito pelo Flink
-- [ ] Particionamento e ordenação confirmados
-- [ ] Janela de 60 segundos confirmada
-- [ ] Condição amount > 0 confirmada
-- [ ] Correspondência observada
-- [ ] Cenários positivos e negativos documentados
-
-**Status final: IMPLEMENTAÇÃO E TESTES LOCAIS CONCLUÍDOS; VALIDAÇÃO REAL NO FLINK NÃO COMPROVADA.**
+**Status: VALIDADO NO FLINK REAL para o cenário positivo e o negativo; demais
+cenários de borda validados apenas localmente.**

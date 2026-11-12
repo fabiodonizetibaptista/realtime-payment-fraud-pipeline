@@ -1,79 +1,56 @@
 # Validação — Processamento contínuo e inspeção
 
-## 1. Identificação
+## Identificação
 
-- Commit executado: PENDENTE
-- Data da execução: PENDENTE
-- Ambiente: PENDENTE
+- Execução: **run-20261111**, 2026-11-12 (UTC), environment `desafio-final`,
+  compute pool `payment-fraud-v2` (AWS us-east-1)
+- SQL: `sql/fraud_detection/continuous/01_continuous_matches.sql`
+- Statement: `etapa11-fraud-pattern-matches` → tabela/tópico `fraud.pattern_matches` (`append`)
 
-## 2. Processamento contínuo
+## Pré-requisitos aplicados por `lab.py flink-setup --apply`
 
-SQL:
-`sql/fraud_detection/continuous/01_continuous_matches.sql`
+```text
+payment-fraud-setup-accounts-pk: APPLIED          PRIMARY KEY (account_id)
+payment-fraud-setup-transactions-pk: APPLIED      PRIMARY KEY (transaction_id)
+payment-fraud-setup-transactions-append: APPLIED  changelog.mode: retract → append
+FLINK_SETUP_COMPLETED=True
+```
 
-Statement configurado (identificador técnico preservado por compatibilidade):
-`etapa11-fraud-pattern-matches`
+Em instalação limpa a Confluent infere `changelog.mode = 'retract'` para
+tópicos Debezium; o temporal join exige `append` em `transactions`. O preflight
+trata esse valor inferido como sobrescrevível e bloqueia qualquer outro modo.
 
-- [ ] Statement submetido
-- [ ] Estado RUNNING confirmado
-- [ ] Processamento permanece ativo durante a inspeção
+## Processamento contínuo
 
-Estado observado: PENDENTE
+```text
+STATEMENT_PHASE=PENDING
+START_SUBMITTED=True
+STATEMENT_PHASE=RUNNING
+```
 
-## 3. Consulta independente
+O statement ficou `RUNNING` durante toda a inspeção e foi apagado no fechamento
+da janela (`lab.py teardown` agora faz isso automaticamente).
 
-SQL:
-`sql/fraud_detection/continuous/02_inspect_matches.sql`
+## Consulta independente
 
-Comando:
-`python3 -m scripts.fraud_stream inspect`
+- `python -m scripts.fraud_stream inspect` (SELECT separado, `LIMIT 50`):
+  `ROWS_OBSERVED=50`, `HAS_CARD_ID_FIELD=True`, `HAS_TIME_FIELDS=True`.
+  As linhas incluem correspondências do snapshot (ver
+  [fraud-pattern.md](fraud-pattern.md#observação-tempo-do-evento)).
+- `python -m scripts.fraud_stream verify-scenario`: correspondência exata do
+  cenário — `SCENARIO_ALERT_GATE=PASS`.
 
-- [ ] SELECT executado separadamente
-- [ ] Resultado observado
-- [ ] Estado do processamento contínuo preservado
+## Tratamento de `card_id` nulo
 
-Evidência sanitizada:
+A regra filtra `WHERE t.card_id IS NOT NULL`: transações sem cartão ficam na
+origem e fora da detecção. `python -m scripts.fraud_stream inspect-null`:
+`ROWS_OBSERVED=0` na execução.
 
-- Quantidade de linhas observadas: PENDENTE
-- Campo card_id presente: PENDENTE
-- Campos first_rowtime e last_rowtime presentes: PENDENTE
+## Gate
 
-Não registrar IDs reais de cartões ou dados financeiros.
+- [x] Statement contínuo permanece RUNNING
+- [x] Consulta independente retorna registros
+- [x] Alerta do cenário observado e rastreável aos 3 IDs
+- [x] Tratamento de `card_id` nulo confirmado
 
-## 4. Tratamento de card_id nulo
-
-A regra de detecção utiliza:
-
-`WHERE t.card_id IS NOT NULL`
-
-Consequentemente:
-
-- Registros com cartão identificado participam da detecção.
-- Registros com card_id nulo são excluídos da detecção.
-- Esses registros continuam disponíveis na origem para inspeção.
-
-SQL de inspeção:
-`sql/fraud_detection/continuous/03_inspect_null_cards.sql`
-
-- [ ] Inspeção executada
-- [ ] Quantidade de registros sem cartão observada
-
-## 5. Interpretação operacional
-
-A ausência imediata de linhas não significa necessariamente falha.
-
-Distinguir:
-
-1. Statement rejeitado ou FAILED: investigar compilação/execução.
-2. Statement RUNNING sem resultados: verificar chegada de eventos e condições da regra.
-3. SELECT sem linhas: verificar existência de correspondências e disponibilidade dos dados.
-
-Uma consulta de inspeção deve ser independente do statement contínuo.
-
-## 6. Gate de conclusão
-
-- [ ] Statement contínuo permanece RUNNING
-- [ ] Consulta independente retorna registros
-- [ ] Tratamento de card_id nulo confirmado
-
-**Status: IMPLEMENTAÇÃO PREPARADA; EXECUÇÃO CONTÍNUA NO FLINK NÃO COMPROVADA.**
+**Status: VALIDADO NO FLINK REAL (run-20261111).**

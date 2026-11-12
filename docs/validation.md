@@ -7,17 +7,21 @@
 - **Comprovado em nuvem:** evidência de execução real vinculada a ambiente e janela verificáveis.
 - **Não comprovado:** pendência explícita; não assumir êxito pela existência do script.
 
-| Requisito | Implementação | Verificação esperada | Evidência disponível / limitação |
+Execução de referência: **run-20261111** (2026-11-12, do zero, em conta vazia).
+Evidências em [`evidencias/runs/run-20261111/`](../evidencias/runs/run-20261111/).
+
+| Requisito | Implementação | Verificação | Situação |
 |---|---|---|---|
-| Kafka e identidades | `infra/terraform/foundation.tf`, `kafka-acls.tf` | Plano, recursos e ACLs remotos | Inventário histórico em `evidencias/infrastructure/`; revisar contexto |
-| Avro e compatibilidade | `schemas/registry/`, scripts de schema | Subjects e evolução BACKWARD | Registros históricos em `evidencias/schemas/` |
-| PostgreSQL e grants | `database/`, `aiven-postgres.tf` | WAL, tabelas, permissões e contagem de dados | `evidencias/database/`, `evidencias/security/` |
-| CDC 5 tabelas | `cdc-connector.tf`, scripts de cenário | INSERT/UPDATE/DELETE, tombstone, entrega Kafka | `evidencias/cdc/`; comparar IDs de eventos |
-| Temporal Join | `sql/enrichment/`, `scripts/flink_setup.py` | PK, changelog e resultado enriquecido real | `evidencias/flink/`, `docs/validation/flink-table-metadata.md` |
-| Regra 3/60s | `sql/fraud_detection/pattern/` | Eventos do mesmo cartão dentro de 60s | Testes locais em `docs/validation/fraud-pattern.md`; Flink real não comprovado nesses documentos |
-| Alerta contínuo | `sql/fraud_detection/continuous/`, `scripts/fraud_stream.py` | Statement RUNNING e linha de correspondência | `docs/validation/fraud-stream.md`: pendência operacional explícita |
-| Cenário sintético | `scripts/fraud_scenarios.py` | Cenário legítimo não gera alerta; fraudulento gera correspondência | `docs/validation/fraud-scenarios.md`: sem resultado real comprovado |
-| Custos e teardown | `collect_operations_evidence.py`, `lab.py` | Extrato de período e ausência de recursos indesejados após teardown | `evidencias/billing/` e `docs/validation/operations.md`; revisão manual necessária |
+| Kafka e identidades | `foundation.tf`, `*-acls.tf`, `metrics-identity.tf` | 14 ACLs, uma identidade por papel | **Comprovado em nuvem** — [foundation/](../evidencias/runs/run-20261111/foundation/identities-and-acls.md) |
+| Avro e compatibilidade | Schema Registry, `*_schema_compatibility_*` | BACKWARD aceita opcional com default e rejeita obrigatório sem default | **Comprovado em nuvem** — [schemas/](../evidencias/runs/run-20261111/schemas/) |
+| PostgreSQL e grants | `database/`, `aiven-postgres.tf`, `configure_cdc_user.py` | WAL lógico, publicação, contagens 200/240/320/60/2000, escrita de negócio negada ao `cdc_user` | **Comprovado em nuvem** — [cdc/](../evidencias/runs/run-20261111/cdc/connector-topics-and-scenario.md) |
+| CDC 5 tabelas | `cdc-connector.tf`, `cdc_test_scenario.py` | c/u/d + tombstone decodificados do Avro para o mesmo ID | **Comprovado em nuvem** — `stage5-cdc-lifecycle.json` |
+| Temporal join | `sql/enrichment/`, `flink_setup.py` | 2004 linhas, 2002 IDs, sem perda nem duplicação | **Comprovado em nuvem** — `flink/02_statement_execution.json` |
+| Regra 3/60 s | `sql/fraud_detection/` | Cenário positivo gera 1 alerta; legítimo não | **Comprovado em nuvem** (bordas só locais) — [fraud-pattern.md](validation/fraud-pattern.md) |
+| Alerta contínuo | `fraud_stream.py` | Statement RUNNING e alerta rastreável aos 3 IDs | **Comprovado em nuvem** — [fraud-stream.md](validation/fraud-stream.md) |
+| Observabilidade | `collect_metrics_evidence.py` | Série `received_bytes` da Metrics API | **Comprovado** (bytes); lag por grupo sem série — limitação documentada |
+| Custos | `collect_operations_evidence.py` | `billing cost list` do período | **Pendente** — billing publicado com atraso |
+| Teardown | `lab.py teardown` | Listas vazias e State vazio | **Comprovado**, após correção da ordem de destruição — [teardown/](../evidencias/runs/run-20261111/teardown/closure-and-teardown.md) |
 
 ## Testes e revisão de segurança
 
@@ -27,4 +31,6 @@ Antes de publicar, conferir que artefatos de evidência não contêm credenciais
 
 ## Aceite para alegar reprodução integral
 
-Somente afirmar *ponta a ponta validado* quando houver, na mesma janela controlada: provisionamento confirmado, origem PostgreSQL válida, CDC entregando eventos Kafka, contratos aceitos, statement Flink executando, correspondência no destino ligada aos três eventos sintéticos e encerramento/custos registrados. Até lá, classificar como implementado e validado localmente, com evidências históricas parciais.
+Critério: na mesma janela controlada, provisionamento confirmado, origem PostgreSQL válida, CDC entregando eventos Kafka, contratos aceitos, statement Flink executando, correspondência no destino ligada aos três eventos sintéticos e encerramento/custos registrados.
+
+A run-20261111 atendeu a todos os itens, exceto o custo final (pendente de publicação no billing). Ela foi conduzida com correções durante a execução; a reprodução guiada **apenas** pela documentação é o gate seguinte ([backlog](audits/reproduction-readiness-backlog.md)).

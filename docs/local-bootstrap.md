@@ -85,7 +85,7 @@ python -m scripts.check_configuration cdc
 - `foundation`: requer credenciais administrativas Aiven/Confluent e projeto Aiven, **nao** requer outputs da Foundation ainda nao criada.
 - `pipeline`: requer os outputs `TF_VAR_foundation_*`, gerados apos o `apply` da Foundation por `python -m scripts.export_foundation_env`.
 - `postgres`: requer credenciais de conexao e caminho `PG_CA` do PostgreSQL provisionado.
-- `cdc`: requer adicionalmente `CDC_PGUSER`, `CDC_PGPASSWORD` e senha do conector.
+- `cdc`: requer adicionalmente `CDC_PGUSER`, `CDC_PGPASSWORD` e senha do conector, todos gravados por `python scripts/configure_cdc_user.py --apply` (nao preencha a mao); o diagnostico imprime `CDC_PASSWORD_MATCH=True/False` sem mostrar valores.
 
 O diagnostico mostra apenas **nomes** das chaves ausentes, nunca os valores.
 `CONFIG_STATUS=PRESENT_NOT_VERIFIED` significa unicamente presenca local,
@@ -107,6 +107,9 @@ Isso impede conexao silenciosa a um servico de execucoes anteriores.
 No PowerShell, inspecione apenas a presenca das variaveis com
 `Get-ChildItem Env:PG* | Select-Object -ExpandProperty Name`, sem imprimir valores.
 Para remover somente uma variavel herdada da sessao atual, use
-`Remove-Item Env:PGHOST -ErrorAction SilentlyContinue`. Em seguida, execute
+`Remove-Item Env:PGHOST -ErrorAction SilentlyContinue`. Se a variavel voltar em
+todo terminal novo, ela esta gravada no perfil do usuario; remova com
+`[Environment]::SetEnvironmentVariable("PGHOST", $null, "User")` (caso real da
+run-20261111). Em seguida, execute
 `python scripts/bootstrap_postgres.py check`. Nao altere a configuracao TLS
 para contornar erros.
