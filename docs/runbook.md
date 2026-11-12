@@ -49,115 +49,112 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Shell
+### Shell e como ler os resultados
 
-Os comandos abaixo valem para bash (Codespaces, Linux, macOS) e PowerShell.
-Só quatro coisas mudam:
+Os comandos valem para bash (Codespaces, Linux, macOS). No Windows, use
+**PowerShell 7** (`pwsh`), que aceita o mesmo encadeamento; no Windows
+PowerShell 5.1, rode os comandos de cada bloco um por vez.
 
-| Ação | Linux/macOS/Codespaces (bash) | Windows (PowerShell) |
+**Cada bloco é encadeado com `&&` e termina com uma linha explícita:**
+
+- `>>> J1.1 OK - siga para J1.2` → tudo deu certo; siga.
+- `>>> J1.1 FALHOU - pare e leia o erro acima` → um comando falhou e **os
+  seguintes não rodaram**. Não siga: veja o "Se falhar" do bloco.
+
+Os comandos do `lab.py` também terminam com `RESULTADO: OK`,
+`RESULTADO: FALHOU` ou `RESULTADO: CANCELADO` (você não digitou a confirmação;
+nada foi alterado). Cole um bloco por vez.
+
+| Ação | bash / PowerShell 7 | Windows PowerShell 5.1 |
 |---|---|---|
-| Definir variável de ambiente | `export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d)` | `$env:EVIDENCE_RUN_ID = "run-" + (Get-Date).ToUniversalTime().ToString("yyyyMMdd")` |
+| Variável de ambiente | `export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d)` | `$env:EVIDENCE_RUN_ID = "run-" + (Get-Date).ToUniversalTime().ToString("yyyyMMdd")` |
 | Capturar output | `ENV_ID=$(terraform -chdir=infra/terraform output -raw environment_id)` | `$ENV_ID = terraform -chdir=infra/terraform output -raw environment_id` |
-| Usar variável | `$ENV_ID` | `$ENV_ID` |
 | Hora UTC | `date -u +%Y-%m-%dT%H:%M:00Z` | `(Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:00Z")` |
 
-## Contas (uma vez)
+## Contas e credenciais (uma vez por conta)
 
 Contas criadas com login do Google (ou outro SSO) funcionam normalmente.
 
-1. **Aiven:** um projeto existente e um token de API — no console da Aiven,
-   **User information → Tokens → Generate token** (`AIVEN_TOKEN`). A Aiven
-   não exige login no terminal: o token basta.
-2. **Confluent Cloud:** uma **Cloud API key** (não uma chave de cluster) de um
-   usuário com permissão de organização — `CONFLUENT_CLOUD_API_KEY` e
-   `CONFLUENT_CLOUD_API_SECRET`. O jeito mais seguro é criá-la pela CLI no
-   J0.3 (`confluent api-key create --resource cloud`); pelo console é
-   **Administration → API keys → Add key → My account → Cloud resource
-   management**. O J0.3 confere se ela funciona antes de qualquer criação.
+1. **Aiven — token.** No console da Aiven: menu do usuário → **Tokens** →
+   **Generate token**. Anote também o nome técnico do projeto. A Aiven não
+   exige login no terminal: o token basta.
+2. **Confluent — login na CLI** (repita em cada Codespace/máquina novo):
 
-**Por que há duas credenciais da Confluent?** A API key do `.env` é usada pelo
-**Terraform** para criar e destruir recursos. A **Confluent CLI** usa a sua
-sessão de usuário (`confluent login`, no J0) para consultas e comandos do
-Flink — listar ACLs, conectores e statements, rodar SQL e ler o billing.
-O login é feito uma vez por Codespace/máquina.
-3. Copie `.env.example` para `.env` e preencha **só** estes quatro valores:
-   `AIVEN_TOKEN`, `CONFLUENT_CLOUD_API_KEY`, `CONFLUENT_CLOUD_API_SECRET`,
-   `TF_VAR_aiven_project`. Todo o resto é gerado pelos scripts.
-   **Não preencha senhas do CDC**: `configure_cdc_user.py` cria a sua.
+   ```bash
+   confluent login --no-browser
+   ```
+
+   Digite o e-mail. Contas Google/SSO **não pedem senha**: a CLI mostra um
+   link — abra no navegador do seu computador, entre e cole o código exibido.
+   Deu certo se aparecer `Logged in as "..."`. Se pedir senha numa conta
+   Google, o e-mail foi digitado errado: pressione Enter e repita.
+3. **Confluent — Cloud API key** (para o Terraform). Crie pela CLI, já logada —
+   assim ela é do tipo certo (*Cloud*, não de cluster):
+
+   ```bash
+   confluent api-key create --resource cloud --description terraform-desafio
+   ```
+
+   Copie `API Key` e `API Secret` para o `.env` (passo 4) e depois rode
+   `clear` para tirar o segredo da tela. O segredo só aparece nesse momento.
+4. **`.env`:** `cp .env.example .env` e preencha **só** `AIVEN_TOKEN`,
+   `TF_VAR_aiven_project`, `CONFLUENT_CLOUD_API_KEY` e
+   `CONFLUENT_CLOUD_API_SECRET` (sem aspas nem espaços). Todo o resto é gerado
+   pelos scripts — **não preencha senhas do CDC**.
+
+> **Sempre que criar uma chave nova, atualize o `.env`** com o novo par e
+> apague a chave antiga no console (Administration → API keys). Se você usa
+> **Codespaces secrets** com esses nomes, eles vencem o `.env`: atualize-os em
+> github.com/settings/codespaces ou apague-os.
+
+**Por que duas credenciais da Confluent?** A API key do `.env` é usada pelo
+**Terraform** para criar e destruir recursos. A **CLI** usa a sua sessão de
+usuário para consultas e para o Flink — listar ACLs, conectores e statements,
+rodar SQL e ler o billing.
 
 Opcional: cloud/região/nomes da Confluent são variáveis Terraform
 (`TF_VAR_confluent_cloud`, `TF_VAR_confluent_region`, padrão `AWS`/`us-east-1`).
 
 ---
 
-## J0 — Preparação (sem custo)
+## J0 — Verificação (sem custo; repetir é seguro)
 
-> **Como executar os blocos deste roteiro:** cole um bloco por vez e confira o
-> PASS antes do próximo. Se um comando falhar, pare ali: os seguintes
-> dependem dele. Nada no J0 cria recursos — repetir é seguro.
-
-**J0.1 — Código e `.env` (sem nuvem)**
+**J0.1 — Código e `.env`**
 
 ```bash
-python lab.py setup                 # terraform init + validate + checagem de CLIs
-python lab.py test                  # testes locais
-python -m scripts.check_configuration foundation
+python lab.py setup &&                    # terraform init + validate + CLIs
+python lab.py test &&                     # testes locais (mais de 270)
+python -m scripts.check_configuration foundation &&
+echo ">>> J0.1 OK - siga para J0.2" || echo ">>> J0.1 FALHOU - pare e leia o erro acima"
 ```
 
-**PASS:** `BOOTSTRAP_LOCAL_OK`, testes `OK` (mais de 270),
-`CONFIG_STATUS=PRESENT_NOT_VERIFIED`.
-**Se `MISSING_KEYS=...`:** preencha essas variáveis no `.env` (seção Contas) e
-rode só o `check_configuration` de novo.
-**Se os testes forem bem menos que 270 ou `scripts.check_configuration` não
-existir:** você está numa branch antiga — volte ao passo de Ambiente.
+**Se falhar:** `MISSING_KEYS=...` → preencha essas variáveis no `.env` e repita.
+Menos de 270 testes ou `scripts.check_configuration` inexistente → branch
+antiga: volte ao passo de Ambiente.
 
-**J0.2 — Login na Confluent CLI**
+**J0.2 — Credenciais funcionam e conta está vazia**
 
 ```bash
-confluent login --no-browser
+python scripts/check_cloud_credentials.py &&   # uma leitura em cada provedor
+confluent environment list > /tmp/envs.txt &&      # falha se a CLI não estiver logada
+! grep -q desafio-final /tmp/envs.txt &&            # não pode existir "desafio-final"
+confluent billing promo list &&
+export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d) &&
+echo ">>> J0.2 OK - siga para J1.1" || echo ">>> J0.2 FALHOU - pare e leia o erro acima"
 ```
 
-Digite o e-mail da conta. Contas Google/SSO **não pedem senha**: a CLI mostra
-um link — abra no navegador do seu computador, entre e cole o código exibido.
-**PASS:** `Logged in as "..."`.
-**Se pedir senha numa conta Google:** o e-mail foi digitado errado (a CLI não
-reconheceu a conta). Pressione Enter, confira o e-mail e repita o comando.
+**Se falhar:**
+- `CONFLUENT_CREDENTIALS=FAILED HTTP=401` → a chave não é uma Cloud API key
+  válida: refaça o passo 3 de Contas.
+- `_SOURCE=CONFLICT` → uma variável do ambiente (Codespaces secret, perfil)
+  tem outro valor e vence o `.env`: `unset <VARIÁVEL>` e apague/atualize o secret.
+- `_SOURCE=DOTENV` e 401 → chave recém-criada leva 1–2 min para valer.
+- `AIVEN_CREDENTIALS=FAILED` → confira o token e o nome do projeto.
+- `CREDENTIALS_GATE=PASS` mas FALHOU → existe `desafio-final` (resíduo de outra
+  execução): derrube-o ([Recuperação](#recuperação)) antes de seguir.
 
-**J0.3 — Conta vazia e créditos**
-
-```bash
-python scripts/check_cloud_credentials.py   # as chaves do .env funcionam? (só leitura)
-confluent environment list          # não pode existir "desafio-final"
-confluent billing promo list        # créditos disponíveis
-export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d)   # isola as evidências desta execução
-```
-
-**PASS:** `CREDENTIALS_GATE=PASS`; nenhum `desafio-final` na lista; créditos
-suficientes para o teto.
-**Se `CONFLUENT_CREDENTIALS=FAILED HTTP=401`:** a chave do `.env` não é uma
-Cloud API key válida (por exemplo, é chave de cluster ou foi revogada). Crie
-uma pela CLI, já logada, e copie os dois valores para o `.env`:
-
-```bash
-confluent api-key create --resource cloud --description terraform-desafio
-clear    # limpa o segredo da tela depois de copiar
-```
-
-Rode `check_cloud_credentials.py` de novo até dar PASS. Ele também mostra de
-onde veio cada credencial (`_SOURCE=`):
-- `CONFLICT`: existe a mesma variável no ambiente com outro valor — por
-  exemplo, um **Codespaces secret** antigo ou uma variável do perfil — e ela
-  **vence o `.env`**. Rode `unset <VARIÁVEL>` (PowerShell:
-  `Remove-Item Env:<VARIÁVEL>`) e apague o secret antigo em
-  github.com/settings/codespaces.
-- `DOTENV` e ainda 401: uma chave recém-criada pode levar 1–2 minutos para
-  valer; confira também se o valor foi colado sem aspas nem espaços.
-**Se `AIVEN_CREDENTIALS=FAILED`:** confira `AIVEN_TOKEN` e o nome técnico do
-projeto em `TF_VAR_aiven_project`.
-**Se `desafio-final` já existe:** é resíduo de outra execução; derrube-o
-(seção [Recuperação](#recuperação)) antes de seguir.
-**Armadilha (Windows):** variáveis `PG*` gravadas no perfil do usuário são
-herdadas e bloqueiam o J2 (`POSTGRES_ENV_CONFLICT`); remova-as do ambiente.
+**Windows:** variáveis `PG*` gravadas no perfil do usuário bloqueiam o J2
+(`POSTGRES_ENV_CONFLICT`); remova-as antes.
 
 ## J1 — Fundação e recursos permanentes
 
@@ -165,153 +162,158 @@ herdadas e bloqueiam o J2 (`POSTGRES_ENV_CONFLICT`); remova-as do ambiente.
 5 identidades e suas chaves: 14 recursos)
 
 ```bash
-python lab.py plan
-python lab.py review-plan                         # PASS: CREATE_COUNT=14, resto 0
-python lab.py apply --confirm-foundation          # digite APPLY FOUNDATION
+python lab.py plan &&
+python lab.py review-plan &&                 # mostra CREATE_COUNT=14
+python lab.py apply --confirm-foundation &&  # digite APPLY FOUNDATION
+echo ">>> J1.1 OK - siga para J1.2" || echo ">>> J1.1 FALHOU - pare e leia o erro acima"
 ```
-
-**PASS:** `FOUNDATION_APPLY_OK=True`.
 
 **J1.2 — Variáveis geradas**
 
 ```bash
-python -m scripts.export_foundation_env           # grava as chaves geradas no .env
-python -m scripts.check_configuration pipeline    # PASS: CONFIG_STATUS=PRESENT_NOT_VERIFIED
+python -m scripts.export_foundation_env &&
+python -m scripts.check_configuration pipeline &&
+echo ">>> J1.2 OK - siga para J1.3" || echo ">>> J1.2 FALHOU - pare e leia o erro acima"
 ```
 
 **J1.3 — Pipeline** (Postgres Aiven, compute pool Flink, identidades do Flink
 e de métricas, role bindings: 16 recursos)
 
 ```bash
-python lab.py plan-pipeline                       # rode UMA vez
-python lab.py review-plan --pipeline              # PASS: CREATE_COUNT=16, resto 0
-python lab.py apply-pipeline --confirm-pipeline   # digite APPLY PIPELINE (sem --allow-cdc)
+python lab.py plan-pipeline &&
+python lab.py review-plan --pipeline &&             # mostra CREATE_COUNT=16
+python lab.py apply-pipeline --confirm-pipeline &&  # digite APPLY PIPELINE
+echo ">>> J1.3 OK - siga para J2" || echo ">>> J1.3 FALHOU - pare e leia o erro acima"
 ```
 
-**PASS:** `PIPELINE_APPLY_OK=True`.
-**Se um apply falhar:** não repita. Confira o que existe com
-`terraform -chdir=infra/terraform state list`. Se estiver vazio (por exemplo,
-`401` em todos os recursos: credencial inválida), nada foi criado — corrija a
-causa e refaça o passo desde o `plan`. Se houver recursos, veja
-[Recuperação](#recuperação).
-Após este passo, **não rode `plan-pipeline` de novo**: as etapas seguintes têm
-scripts próprios que preservam o que já existe.
+**Se um bloco do J1 falhar:** não repita às cegas. Veja o que existe com
+`terraform -chdir=infra/terraform state list`. Vazio (ex.: `401` em todos os
+recursos) → nada foi criado: corrija a causa e repita o bloco inteiro. Com
+recursos → [Recuperação](#recuperação). Depois do J1.3 **não rode
+`plan-pipeline` de novo**: as etapas seguintes têm scripts próprios.
 
 ## J2 — Origem PostgreSQL
 
-O Postgres leva alguns minutos para ficar `RUNNING`; se o primeiro comando
-falhar por isso, espere e repita só ele.
+O Postgres leva alguns minutos para ficar `RUNNING`. Se o primeiro comando
+falhar por isso, espere 2–3 min e repita o bloco.
 
 ```bash
-python scripts/export_postgres_env.py
-python scripts/fetch_aiven_ca.py
-python scripts/bootstrap_postgres.py apply        # schema, publicação e seed
-python scripts/configure_cdc_user.py --apply      # cria cdc_user e grava a senha no .env
-python -m scripts.check_configuration cdc         # PASS: CDC_PASSWORD_MATCH=True
-python scripts/preflight_postgres_cdc.py          # PASS: CDC_PREFLIGHT_GATE= PASS
+python scripts/export_postgres_env.py &&
+python scripts/fetch_aiven_ca.py &&
+python scripts/bootstrap_postgres.py apply &&     # schema, publicação e seed
+python scripts/configure_cdc_user.py --apply &&   # cria cdc_user e grava a senha no .env
+python -m scripts.check_configuration cdc &&      # mostra CDC_PASSWORD_MATCH=True
+python scripts/preflight_postgres_cdc.py &&
+echo ">>> J2 OK - siga para J3" || echo ">>> J2 FALHOU - pare e leia o erro acima"
 ```
 
-**PASS:** contagens 200/240/320/60/2000, `WAL_LEVEL_LOGICAL`,
-`REPLICA_IDENTITY_FULL_OK`, `CDC_BUSINESS_WRITE_DENIED` = `True`.
+Na saída: contagens 200/240/320/60/2000 e `CDC_PREFLIGHT_GATE= PASS`.
+`POSTGRES_ENV_CONFLICT:<VAR>` → uma variável `PG*` do ambiente difere do `.env`;
+remova-a (`unset <VAR>`) e repita.
 
 ## J3 — Permissões Kafka (ACLs)
 
 ```bash
-python scripts/plan_cdc_acls.py                   # PASS: ONLY_EXPECTED_ACL_CREATES=True (11)
-python scripts/apply_cdc_acls.py --confirm-acls   # PASS: ACL_APPLY_GATE=PASS
-ENV_ID=$(terraform -chdir=infra/terraform output -raw environment_id)
-KAFKA_ID=$(terraform -chdir=infra/terraform output -raw kafka_cluster_id)
-confluent kafka acl list --environment $ENV_ID --cluster $KAFKA_ID
+python scripts/plan_cdc_acls.py &&                # 11 ACLs esperadas
+python scripts/apply_cdc_acls.py --confirm-acls &&
+ENV_ID=$(terraform -chdir=infra/terraform output -raw environment_id) &&
+KAFKA_ID=$(terraform -chdir=infra/terraform output -raw kafka_cluster_id) &&
+confluent kafka acl list --environment $ENV_ID --cluster $KAFKA_ID &&
+echo ">>> J3 OK - siga para J4" || echo ">>> J3 FALHOU - pare e leia o erro acima"
 ```
 
-**PASS:** 14 ACLs (11 novas + 3 do Flink); `desafio-consumer` com READ em
-`payments.` e no grupo `desafio-`.
+A lista deve ter 14 ACLs (11 novas + 3 do Flink). `ENV_ID` e `KAFKA_ID` valem
+para este terminal; num terminal novo, repita as duas linhas.
 
 ---
 
 ## J4 — Janela faturável (≤ 2 h a partir daqui)
 
-Anote o início: `WINDOW_START=$(date -u +%Y-%m-%dT%H:%M:00Z)`.
+**Condições de parada** — se qualquer uma ocorrer, vá direto ao J5
+(fechamento) e investigue com tudo desligado: apply do conector falhou;
+conector fora de `RUNNING` após 10 min; statement Flink `FAILED`; alerta não
+observado em 10 min; janela chegou a 2 h.
 
-**Condições de parada** — se qualquer uma ocorrer, pule para o J5 (fechamento)
-e investigue com tudo desligado: apply do conector falhou; conector fora de
-`RUNNING` após 10 min; statement Flink `FAILED`; alerta não observado em 10 min;
-janela chegou a 2 h.
-
-### Ingestão (CDC)
+**J4.1 — Ingestão (CDC)**
 
 ```bash
-python scripts/plan_cdc_connector.py              # PASS: ONLY_CDC_CONNECTOR_CREATE=True
-python scripts/apply_cdc_connector.py             # PASS: CONNECTOR_IN_STATE=True
-confluent connect cluster list --environment $ENV_ID --cluster $KAFKA_ID   # repita até RUNNING
-confluent kafka topic list --environment $ENV_ID --cluster $KAFKA_ID       # 6 tópicos payments.*
-python src/consumer/audit_cdc.py                  # PASS: CONSUMER_GATE= PASS
-python scripts/cdc_test_scenario.py --execute     # baseline + INSERT/UPDATE/DELETE + verificação
+WINDOW_START=$(date -u +%Y-%m-%dT%H:%M:00Z) &&
+python scripts/plan_cdc_connector.py &&
+python scripts/apply_cdc_connector.py &&
+echo "Aguardando o conector ficar RUNNING (até 10 min)..." &&
+for i in $(seq 20); do confluent connect cluster list --environment $ENV_ID --cluster $KAFKA_ID | grep -q RUNNING && break; sleep 30; done &&
+confluent connect cluster list --environment $ENV_ID --cluster $KAFKA_ID | grep RUNNING &&
+sleep 60 &&                                        # snapshot inicial
+python src/consumer/audit_cdc.py &&                # 6 tópicos lidos
+python scripts/cdc_test_scenario.py --execute &&   # baseline + INSERT/UPDATE/DELETE + verificação
+echo ">>> J4.1 OK - siga para J4.2" || echo ">>> J4.1 FALHOU - pare e leia o erro acima"
 ```
 
-**PASS:** `SCENARIO_GATE=PASS` e `LIFECYCLE_GATE= PASS` com `C`, `U`, `D`, `TOMBSTONE`.
-**Se o apply falhar:** rode `python scripts/apply_cdc_connector.py --show-error`
-após um novo `plan_cdc_connector.py` (erro mascarado na tela, nada gravado) e
+Na saída: `LIFECYCLE_GATE= PASS` com `C`, `U`, `D` e `TOMBSTONE`.
+**Se o apply do conector falhar:** veja se ficou conector órfão
+(`confluent connect cluster list ...`). Para diagnosticar sem custo:
 `python scripts/validate_cdc_connector_config.py` (valida campo a campo, sem
-criar nada). Confira se ficou conector órfão com `connect cluster list`.
+criar nada) e, depois de um novo `plan_cdc_connector.py`,
+`python scripts/apply_cdc_connector.py --show-error` (erro mascarado na tela).
 
-### Contrato (Schema Registry)
-
-```bash
-python scripts/plan_schema_compatibility_policy.py    # PASS: POLICY_PLAN_GATE=PASS
-python scripts/apply_schema_compatibility_policy.py   # PASS: POLICY_BACKWARD= True
-python scripts/verify_schema_compatibility.py         # PASS: COMPATIBILITY_GATE= PASS
-python scripts/collect_schema_evidence.py
-```
-
-**PASS:** campo opcional com default **aceito**; campo obrigatório sem default
-**rejeitado**; nenhuma versão nova registrada.
-
-### Processamento (Flink SQL)
+**J4.2 — Contrato (Schema Registry)**
 
 ```bash
-python lab.py flink-setup                         # PASS: 3 passos MISSING, FLINK_PREFLIGHT=PASSED
-python lab.py flink-setup --apply                 # digite APPLY FLINK; PASS: 3 APPLIED
-python scripts/validate_temporal_join.py          # PASS: STAGE9_DATA_GATE= PASS
-python -m scripts.fraud_stream start --confirm-start
-python -m scripts.fraud_stream status             # PASS: STATEMENT_PHASE=RUNNING
-python -m scripts.fraud_scenarios execute --confirm-execute   # aguarda o alerta (até 10 min)
-python -m scripts.fraud_stream inspect-null       # PASS: ROWS_OBSERVED=0
+python scripts/plan_schema_compatibility_policy.py &&
+python scripts/apply_schema_compatibility_policy.py &&
+python scripts/verify_schema_compatibility.py &&   # opcional aceito, obrigatório rejeitado
+python scripts/collect_schema_evidence.py &&
+echo ">>> J4.2 OK - siga para J4.3" || echo ">>> J4.2 FALHOU - pare e leia o erro acima"
 ```
 
-**PASS:** `ALERT_CONFIRMATION=PASS` com `FRAUD_SEQUENCE_MATCHED=True` e
+**J4.3 — Processamento (Flink SQL)**
+
+```bash
+python lab.py flink-setup &&                        # preflight: 3 passos MISSING
+python lab.py flink-setup --apply &&                # digite APPLY FLINK
+python scripts/validate_temporal_join.py &&         # STAGE9_DATA_GATE= PASS
+python -m scripts.fraud_stream start --confirm-start &&
+sleep 30 &&
+python -m scripts.fraud_stream status &&            # STATEMENT_PHASE=RUNNING
+python -m scripts.fraud_scenarios execute --confirm-execute &&   # espera o alerta (até 10 min)
+python -m scripts.fraud_stream inspect-null &&
+echo ">>> J4.3 OK - siga para J4.4" || echo ">>> J4.3 FALHOU - pare e leia o erro acima"
+```
+
+Na saída: `ALERT_CONFIRMATION=PASS`, `FRAUD_SEQUENCE_MATCHED=True` e
 `LEGITIMATE_IN_ANY_MATCH=False`.
 
-### Operação (métricas, inventário)
-
-Espere ~5 min após o último cenário (latência da Metrics API):
+**J4.4 — Operação (métricas e inventário)** — espere ~5 min depois do J4.3
+(latência da Metrics API).
 
 ```bash
-python scripts/collect_metrics_evidence.py --start $WINDOW_START
-TODAY=$(python -c "import datetime as d; print(d.datetime.now(d.timezone.utc).date())")
-TOMORROW=$(python -c "import datetime as d; print(d.datetime.now(d.timezone.utc).date() + d.timedelta(1))")
-python -m scripts.collect_operations_evidence collect --confirm-read \
-  --start-date $TODAY --end-date $TOMORROW --environment $ENV_ID --cluster $KAFKA_ID
+python scripts/collect_metrics_evidence.py --start $WINDOW_START &&
+TODAY=$(python -c "import datetime as d; print(d.datetime.now(d.timezone.utc).date())") &&
+TOMORROW=$(python -c "import datetime as d; print(d.datetime.now(d.timezone.utc).date() + d.timedelta(1))") &&
+python -m scripts.collect_operations_evidence collect --confirm-read --start-date $TODAY --end-date $TOMORROW --environment $ENV_ID --cluster $KAFKA_ID &&
+echo ">>> J4.4 OK - siga para J5" || echo ">>> J4.4 FALHOU - pare e leia o erro acima"
 ```
 
-No PowerShell, troque `VAR=$(...)` por `$VAR = (...)` e a quebra `\` por uma linha só.
-**PASS:** `METRICS_STATUS=COM_DADOS`, `COLLECTION=PASS`. Se as métricas
-vierem vazias, repita em 10 min.
+`METRICS_STATUS=SEM_DADOS` → repita só o primeiro comando em 10 min.
 
 ## J5 — Fechamento da janela
 
 ```bash
-python scripts/teardown_cdc_connector.py --execute   # PASS: TEARDOWN_GATE= PASS
-confluent connect cluster list --environment $ENV_ID --cluster $KAFKA_ID   # None found.
+python scripts/teardown_cdc_connector.py --execute &&
+confluent connect cluster list --environment $ENV_ID --cluster $KAFKA_ID &&   # None found.
+echo ">>> J5 OK - siga para J6" || echo ">>> J5 FALHOU - pare e leia o erro acima"
 ```
 
 ## J6 — Teardown total
 
 ```bash
-python lab.py teardown --confirm-destroy   # revise DESTROY_COUNT e FLINK_STATEMENTS_TO_DELETE; digite DESTROY PIPELINE
-terraform -chdir=infra/terraform state list      # PASS: vazio
-confluent environment list                       # PASS: sem desafio-final
-confluent iam service-account list               # PASS: sem desafio-* e payment-fraud-*
+python lab.py teardown --confirm-destroy &&   # revise DESTROY_COUNT e FLINK_STATEMENTS_TO_DELETE; digite DESTROY PIPELINE
+test -z "$(terraform -chdir=infra/terraform state list)" &&
+confluent environment list > /tmp/envs.txt &&
+! grep -q desafio-final /tmp/envs.txt &&
+confluent iam service-account list > /tmp/sas.txt &&
+! grep -qE "desafio-|payment-fraud-" /tmp/sas.txt &&
+echo ">>> J6 OK - tudo derrubado" || echo ">>> J6 FALHOU - pare e leia o erro acima"
 ```
 
 O teardown apaga primeiro os statements Flink e depois todos os recursos do

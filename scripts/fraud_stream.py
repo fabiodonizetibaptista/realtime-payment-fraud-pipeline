@@ -241,7 +241,11 @@ def main():
     if args.action == "start":
         start(runtime)
     elif args.action == "status":
-        print(f"STATEMENT_PHASE={statement_status(runtime)}")
+        phase = statement_status(runtime)
+        print(f"STATEMENT_PHASE={phase}")
+        if phase != "RUNNING":
+            # Codigo de saida != 0 para o roteiro parar (&&) se nao estiver rodando.
+            raise SystemExit(1)
     elif args.action == "verify-scenario":
         verify_scenario(runtime)
     else:

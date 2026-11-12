@@ -232,7 +232,7 @@ def apply_foundation(confirm: bool = False) -> None:
 
     if approval != "APPLY FOUNDATION":
         print("FOUNDATION_APPLY_CANCELLED=True")
-        return
+        return CANCELLED
 
     try:
         # Aplicar um saved plan nao requer -auto-approve:
@@ -299,6 +299,9 @@ def plan_pipeline() -> None:
             secrets=secret_values(execution_env),
         )
     except (RuntimeError, OSError):
+        # Plano parcial/obsoleto bloquearia o proximo plan-pipeline
+        # (EXISTING_PLAN) — caso real da execucao guiada.
+        plan_path.unlink(missing_ok=True)
         # O erro original do provider pode incluir valores sensiveis.
         # O diagnostico detalhado deve ocorrer por canal seguro.
         raise RuntimeError(
@@ -427,7 +430,7 @@ def apply_pipeline(confirm: bool = False, allow_cdc: bool = False) -> None:
 
     if approval != "APPLY PIPELINE":
         print("PIPELINE_APPLY_CANCELLED=True")
-        return
+        return CANCELLED
 
     # O Terraform verifica se o plano salvo permanece aplicavel
     # ao state. Nao regeneramos o plano apos a aprovacao.
@@ -544,7 +547,7 @@ def teardown(confirm: bool = False) -> None:
     if approval != "DESTROY PIPELINE":
         plan_path.unlink(missing_ok=True)
         print("TEARDOWN_CANCELLED=True")
-        return
+        return CANCELLED
 
     if flink is not None:
         try:
@@ -615,7 +618,7 @@ def setup_flink(apply: bool = False) -> None:
     approval = input("Digite APPLY FLINK para autorizar os DDLs: ")
     if approval != "APPLY FLINK":
         print("FLINK_APPLY_CANCELLED=True")
-        return
+        return CANCELLED
 
     results = prepare_tables(runtime)
 
@@ -625,7 +628,26 @@ def setup_flink(apply: bool = False) -> None:
     print("FLINK_SETUP_COMPLETED=True")
 
 
+CANCELLED = "CANCELLED"
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    """Executa o comando e termina com uma linha RESULTADO inequivoca.
+
+    Codigos de saida: 0 OK, 1 FALHOU, 2 CANCELADO; permitem encadear os
+    passos do roteiro com && e parar no primeiro problema.
+    """
+    code = _dispatch(argv)
+    verdict = {
+        0: "RESULTADO: OK",
+        1: "RESULTADO: FALHOU - corrija a causa antes de continuar (veja ERRO acima)",
+        2: "RESULTADO: CANCELADO - nada foi alterado",
+    }.get(code, f"RESULTADO: CODIGO {code}")
+    print(verdict)
+    return code
+
+
+def _dispatch(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Laboratorio de pagamentos em tempo real.")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("setup", help="prepara e valida o bootstrap local")
@@ -686,26 +708,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands.add_parser("check-cli", help="valida localmente os comandos Confluent CLI")
     commands.add_parser("test", help="executa os testes sem credenciais")
     args = parser.parse_args(argv)
+    outcome = None
     try:
         if args.command == "setup":
             setup()
         elif args.command == "plan":
             plan()
         elif args.command == "apply":
-            apply_foundation(confirm=args.confirm_foundation)
+            outcome = apply_foundation(confirm=args.confirm_foundation)
         elif args.command == "plan-pipeline":
             plan_pipeline()
         elif args.command == "review-plan":
             review_saved_plan(pipeline=args.pipeline)
         elif args.command == "apply-pipeline":
-            apply_pipeline(
+            outcome = apply_pipeline(
                 confirm=args.confirm_pipeline,
                 allow_cdc=args.allow_cdc,
             )
         elif args.command == "flink-setup":
-            setup_flink(apply=args.apply)
+            outcome = setup_flink(apply=args.apply)
         elif args.command == "teardown":
-            teardown(confirm=args.confirm_destroy)
+            outcome = teardown(confirm=args.confirm_destroy)
         elif args.command == "check-cli":
             check_cli_help()
             print(f"CONFLUENT_CLI_HELP_OK={len(CLI_HELP_COMMANDS)}")
@@ -718,7 +741,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as error:
         print(f"ERRO: {error}", file=sys.stderr)
         return 1
-    return 0
+    return 2 if outcome == CANCELLED else 0
 
 
 if __name__ == "__main__":
