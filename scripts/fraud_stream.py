@@ -27,6 +27,20 @@ FILES = {
 }
 
 STATEMENT_NAME = "etapa11-fraud-pattern-matches"
+MANIFEST = ROOT / ".local" / "etapa12-scenarios.json"
+
+# Consulta dirigida ao cenario sintetico. Os IDs vem do manifesto local
+# (inteiros negativos gerados por fraud_scenarios) e sao convertidos com
+# int() antes da interpolacao; nenhum texto externo entra no SQL.
+VERIFY_SQL = """
+SELECT first_transaction_id, middle_transaction_id, last_transaction_id,
+       transaction_count
+FROM `desafio-final`.`desafio-basic`.`fraud.pattern_matches`
+WHERE first_transaction_id IN ({ids})
+   OR middle_transaction_id IN ({ids})
+   OR last_transaction_id IN ({ids})
+LIMIT 50
+"""
 
 
 def load_sql(action):
@@ -116,13 +130,89 @@ def inspect(runtime, action):
         )
 
 
+def load_manifest(path=None):
+    """IDs sinteticos do cenario: [legitimo, fraude_1, fraude_2, fraude_3]."""
+    import json
+
+    path = path or MANIFEST
+    if not path.is_file():
+        raise FlinkRuntimeError("SCENARIO_MANIFEST_MISSING")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    ids = [int(value) for value in manifest.get("test_ids", [])]
+    if manifest.get("status") != "COMPLETED" or len(ids) != 4 or len(set(ids)) != 4:
+        raise FlinkRuntimeError("SCENARIO_MANIFEST_INCOMPLETE")
+    return ids
+
+
+def evaluate_scenario(rows, ids):
+    """PASS somente se a fraude casar exatamente e o legitimo nao casar."""
+    legitimate, fraud = ids[0], tuple(ids[1:])
+    triples = []
+    for row in rows:
+        try:
+            triples.append(tuple(int(row[key]) for key in (
+                "first_transaction_id", "middle_transaction_id", "last_transaction_id",
+            )))
+        except (KeyError, TypeError, ValueError):
+            continue
+    fraud_match = fraud in triples
+    legitimate_matched = any(legitimate in triple for triple in triples)
+    return {
+        "FRAUD_SEQUENCE_MATCHED": fraud_match,
+        "FRAUD_MATCHES_FOR_SCENARIO": sum(1 for t in triples if set(t) & set(fraud)),
+        "LEGITIMATE_IN_ANY_MATCH": legitimate_matched,
+        "SCENARIO_ALERT_GATE": "PASS" if fraud_match and not legitimate_matched else "PENDING_OR_FAIL",
+    }
+
+
+def verify_scenario(runtime):
+    """Consulta somente matches que contenham IDs do cenario; imprime booleanos."""
+    ids = load_manifest()
+    sql = VERIFY_SQL.format(ids=", ".join(str(int(value)) for value in ids))
+    rows = runtime.query(render_for_runtime(sql, runtime), timeout=35)
+    result = evaluate_scenario(rows, ids)
+    print("INSPECTION_TYPE=verify-scenario")
+    for key, value in result.items():
+        print(f"{key}={value}")
+    print("TRANSACTION_IDS_PRINTED=False")
+    save_scenario_evidence(result)
+    return result
+
+
+def save_scenario_evidence(result, path=None):
+    """Grava somente booleanos/contagens; nenhum ID ou valor de transacao."""
+    import json
+    import sys
+    from datetime import datetime, timezone
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from safety import evidence_path
+
+    path = path or evidence_path(ROOT, "flink/fraud-scenario-alert.json")
+    if path.exists():
+        print("EVIDENCE_SAVED=False; EVIDENCE_ALREADY_EXISTS")
+        return path
+    record = {
+        "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+        "statement": STATEMENT_NAME,
+        "pattern": "3 transacoes do mesmo cartao em ate 60 s (MATCH_RECOGNIZE)",
+        **{key.lower(): value for key, value in result.items()},
+        "transaction_ids_recorded": False,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print("EVIDENCE_SAVED=True")
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Executor controlado da Etapa 11"
     )
     parser.add_argument(
         "action",
-        choices=("plan", "start", "status", "inspect", "inspect-null"),
+        choices=("plan", "start", "status", "inspect", "inspect-null", "verify-scenario"),
     )
     parser.add_argument(
         "--confirm-start",
@@ -151,6 +241,8 @@ def main():
         start(runtime)
     elif args.action == "status":
         print(f"STATEMENT_PHASE={statement_status(runtime)}")
+    elif args.action == "verify-scenario":
+        verify_scenario(runtime)
     else:
         inspect(runtime, args.action)
 

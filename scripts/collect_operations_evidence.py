@@ -4,7 +4,8 @@ plan: valida o plano localmente.
 collect --confirm-read: consulta a Confluent e exporta evidencias.
 
 Nao cria recursos, nao imprime respostas brutas nem credenciais.
-O ambiente e descoberto a partir da sessao ativa da CLI.
+Environment e cluster sao informados explicitamente (--environment/--cluster);
+a sessao ativa da CLI nao e usada para escolher o escopo.
 """
 
 import argparse
@@ -52,6 +53,14 @@ def active_environment(environments):
     if len(current) != 1 or not current[0].get("id"):
         raise ValueError("ACTIVE_ENVIRONMENT_NOT_RESOLVED")
     return current[0]
+
+
+def select_environment(environments, env_id):
+    """Escolhe o environment pelo ID explicito, nunca pela sessao ativa."""
+    matches = [e for e in environments if e.get("id") == env_id]
+    if len(matches) != 1:
+        raise ValueError("ENVIRONMENT_NOT_FOUND")
+    return matches[0]
 
 
 def amount(value):
@@ -129,14 +138,14 @@ def summarize_billing(items, selected_environment):
     }
 
 
-def collect(start, end):
-    env = active_environment(query("environment", "list"))
-    env_id = env["id"]
+def collect(start, end, env_id, cluster_id):
+    env = select_environment(query("environment", "list"), env_id)
+    scope = ("--environment", env_id)
 
-    clusters = rows(query("kafka", "cluster", "list"))
-    pools = rows(query("flink", "compute-pool", "list"))
+    clusters = rows(query("kafka", "cluster", "list", *scope))
+    pools = rows(query("flink", "compute-pool", "list", *scope))
     identities = rows(query("iam", "service-account", "list"))
-    acls = rows(query("kafka", "acl", "list"))
+    acls = rows(query("kafka", "acl", "list", *scope, "--cluster", cluster_id))
     billing = rows(query(
         "billing", "cost", "list",
         "--start-date", start, "--end-date", end,
@@ -207,6 +216,8 @@ def main():
     parser.add_argument("--start-date")
     parser.add_argument("--end-date")
     parser.add_argument("--confirm-read", action="store_true")
+    parser.add_argument("--environment", help="ID do environment (env-...)")
+    parser.add_argument("--cluster", help="ID do cluster Kafka (lkc-...)")
     args = parser.parse_args()
 
     if args.action == "plan":
@@ -225,6 +236,8 @@ def main():
     try:
         if not args.start_date or not args.end_date:
             raise ValueError("DATES_REQUIRED")
+        if not args.environment or not args.cluster:
+            raise ValueError("ENVIRONMENT_AND_CLUSTER_REQUIRED")
 
         start = date.fromisoformat(args.start_date)
         end = date.fromisoformat(args.end_date)
@@ -235,7 +248,7 @@ def main():
         if OUTPUT.exists():
             raise ValueError("REPORT_ALREADY_EXISTS")
 
-        report = collect(start.isoformat(), end.isoformat())
+        report = collect(start.isoformat(), end.isoformat(), args.environment, args.cluster)
         save(report)
 
         print("CLUSTER_COUNT=" + str(len(report["kafka_clusters"])))

@@ -52,6 +52,9 @@ STEPS = (
 )
 
 
+INFERRED_CHANGELOG_DEFAULTS = frozenset({"retract"})
+
+
 def load_sql(path):
     """Read SQL without modifying its versioned source file."""
     path = ROOT / path
@@ -157,10 +160,29 @@ def assess_definition(definition, step):
         if all(mode.lower() == step.expected.lower() for mode in modes):
             return "PRESENT"
 
+        # Em instalacao limpa, a Confluent infere 'retract' para topicos com
+        # envelope Debezium (observado em 2026-11-12, run-20261111). Esse
+        # valor e o padrao do catalogo, nao uma escolha de operador, e o
+        # Temporal Join exige 'append'. Outros modos explicitos (ex.: upsert)
+        # continuam bloqueados para revisao.
+        if all(mode.lower() in INFERRED_CHANGELOG_DEFAULTS for mode in modes):
+            return "MISSING"
+
         return "CONFLICT"
 
     raise FlinkRuntimeError("UNKNOWN_DDL_VALIDATION_TYPE")
 
+
+
+def observed_value(definition, step):
+    """Valor de controle observado para diagnostico (sem dados da tabela)."""
+    if step.kind == "changelog":
+        pattern = r"""['"`]?changelog\.mode['"`]?\s*=\s*['"`]?([a-z_-]+)"""
+    else:
+        pattern = r"\bPRIMARY\s+KEY\s*\(([^)]*)\)"
+    values = re.findall(pattern, definition, re.IGNORECASE)
+    cleaned = [re.sub(r"[^a-z0-9_,-]", "", value.lower()) for value in values]
+    return ",".join(cleaned) or "NONE"
 
 
 def validate_ddl(step, ddl):
@@ -279,6 +301,9 @@ def preflight_tables(runtime):
         state = assess_definition(definition, step)
 
         if state == "CONFLICT":
+            # Somente o valor de controle observado (palavra [a-z_-]),
+            # nunca a definicao completa da tabela.
+            print(f"OBSERVED_{step.table.upper()}_{step.kind.upper()}={observed_value(definition, step)}")
             raise FlinkRuntimeError(
                 f"FLINK_PREFLIGHT_CONFLICT_{step.table.upper()}_{step.kind.upper()}"
             )

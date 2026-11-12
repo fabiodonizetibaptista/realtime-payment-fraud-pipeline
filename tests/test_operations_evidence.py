@@ -47,7 +47,8 @@ class Etapa13CollectTests(unittest.TestCase):
 
     def test_collect_uses_read_only_queries(self):
         responses = [
-            [{"id": "env-a", "name": "test", "is_current": True}],
+            [{"id": "env-default", "name": "default", "is_current": True},
+             {"id": "env-a", "name": "test", "is_current": False}],
             [{"id": "lkc-test", "name": "cluster", "status": "UP"}],
             [{"id": "lfcp-test", "status": "PROVISIONED"}],
             [{"id": "sa-test"}],
@@ -57,14 +58,24 @@ class Etapa13CollectTests(unittest.TestCase):
         ]
 
         with patch.object(collector, "query", side_effect=responses) as mocked:
-            report = collector.collect("2026-11-01", "2026-11-10")
+            report = collector.collect("2026-11-01", "2026-11-10", "env-a", "lkc-test")
 
         self.assertEqual(mocked.call_count, 6)
+        # Escopo explicito, mesmo com outro environment ativo na CLI.
+        self.assertEqual(report["environment_id"], "env-a")
+        calls = [call.args for call in mocked.call_args_list]
+        self.assertIn(("kafka", "cluster", "list", "--environment", "env-a"), calls)
+        self.assertIn(("kafka", "acl", "list", "--environment", "env-a", "--cluster", "lkc-test"), calls)
         self.assertEqual(report["service_account_count"], 1)
         self.assertEqual(report["kafka_acl_count"], 1)
         self.assertEqual(
             report["billing"]["environment_total_usd"], "0.10"
         )
+
+
+    def test_unknown_environment_id_is_rejected(self):
+        with self.assertRaises(ValueError):
+            collector.select_environment([{"id": "env-b"}], "env-a")
 
 
 if __name__ == "__main__":

@@ -131,10 +131,27 @@ class FlinkSetupTests(unittest.TestCase):
             "MISSING",
         )
 
+    def test_inferred_retract_default_is_overridable(self):
+        # Valor inferido pela Confluent para topicos Debezium em instalacao
+        # limpa (observado no run-20261111); o Temporal Join exige append.
+        definition = (
+            "CREATE TABLE transactions "
+            "WITH ('changelog.mode' = 'retract', "
+            "'value.format' = 'avro-debezium-registry')"
+        )
+
+        self.assertEqual(
+            assess_definition(
+                definition,
+                step("changelog", "append"),
+            ),
+            "MISSING",
+        )
+
     def test_detects_conflicting_changelog_mode(self):
         definition = (
             "CREATE TABLE transactions "
-            "WITH ('changelog.mode' = 'retract')"
+            "WITH ('changelog.mode' = 'upsert')"
         )
 
         self.assertEqual(

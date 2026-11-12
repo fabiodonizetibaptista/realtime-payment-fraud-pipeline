@@ -1,4 +1,5 @@
 # Dependencias Python do pipeline
 # Versoes de referencia do ambiente de desenvolvimento
 pg8000==1.31.6
-confluent-kafka==2.16.1
+confluent-kafka[avro,schemaregistry]==2.16.1
+certifi==2026.10.23
