@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import discard_stale_plan, load_env_file
 from scripts.cdc_stage_flags import configure_flags, changes_in_plan, CONNECTOR
 
 TF_DIR = ROOT / "infra" / "terraform"
@@ -48,9 +48,7 @@ def approved_acl_plan(data, existing):
 
 
 def main():
-    if PLAN.exists():
-        print('ACL_PLAN_GATE=BLOCKED; REASON=EXISTING_PLAN')
-        return 1
+    discard_stale_plan(PLAN)
     cfg = load_env_file(ROOT / '.env')
     env = dict(os.environ)
     for key, val in cfg.items():

@@ -22,7 +22,7 @@ import pg8000.dbapi
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import archive_previous, load_env_file
 
 TF_DIR = ROOT / "infra" / "terraform"
 CA_FILE = ROOT / ".local" / "aiven-ca.pem"
@@ -86,8 +86,8 @@ def main():
     print("========== ETAPA 5 — CENARIO CDC ==========", flush=True)
 
     if args.execute:
-        if RESULT_FILE.exists():
-            raise RuntimeError("SCENARIO_RESULT_ALREADY_EXISTS")
+        # Cenario de tentativa anterior: arquiva e roda de novo (IDs novos).
+        archive_previous(RESULT_FILE)
         if not connector_in_state():
             raise RuntimeError("CDC_CONNECTOR_NOT_IN_STATE")
         # Baseline de offset ANTES de qualquer mutacao: sem ele a

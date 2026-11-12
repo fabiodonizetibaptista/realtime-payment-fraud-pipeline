@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from safety import evidence_path  # noqa: E402
+from safety import archive_previous, evidence_path  # noqa: E402
 SCHEMAS = ROOT / "schemas" / "registry"
 EVIDENCE = evidence_path(ROOT, "schemas")
 
@@ -185,8 +185,9 @@ def main():
         "stage6-schema-evolution-diff.json": diff_evidence,
     }
 
-    if any((EVIDENCE / name).exists() for name in outputs):
-        raise RuntimeError("EVIDENCE_TARGET_ALREADY_EXISTS")
+    # Tentativa anterior do mesmo passo: arquiva em vez de bloquear.
+    for name in outputs:
+        archive_previous(EVIDENCE / name)
 
     created = []
 

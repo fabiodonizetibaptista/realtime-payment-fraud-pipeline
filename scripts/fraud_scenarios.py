@@ -36,8 +36,10 @@ def plan():
 
 def execute():
     """Insere eventos independentes, reaproveitando FKs existentes."""
-    if MANIFEST.exists():
-        raise RuntimeError("SCENARIO_ALREADY_RECORDED")
+    # Manifesto de tentativa anterior: arquivado; o novo cenario usa IDs novos
+    # e a verificacao considera somente o manifesto atual.
+    from safety import archive_previous
+    archive_previous(MANIFEST)
     if not connector_in_state():
         raise RuntimeError("CDC_CONNECTOR_NOT_IN_STATE")
 

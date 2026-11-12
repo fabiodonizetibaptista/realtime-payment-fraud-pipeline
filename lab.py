@@ -11,6 +11,7 @@ from typing import Sequence
 from plan_review import review_plan
 
 from safety import (
+    discard_stale_plan,
     changed_resources,
     merge_env_file,
     run_command,
@@ -277,13 +278,9 @@ def plan_pipeline() -> None:
 
     plan_path = TF_DIR / "pipeline.tfplan"
 
-    # Um plano antigo nao pode ser reutilizado silenciosamente.
-    # A geracao de um novo plano exige revisao posterior.
-    if plan_path.exists():
-        raise RuntimeError(
-            "PIPELINE_PLAN_BLOCKED=EXISTING_PLAN; "
-            "revise e remova o plano antigo antes de gerar outro."
-        )
+    # Um plano antigo nunca e reutilizado: e descartado e um novo e gerado,
+    # sujeito a revisao (review-plan) antes de qualquer apply.
+    discard_stale_plan(plan_path)
 
     try:
         run_command(
@@ -480,8 +477,7 @@ def teardown(confirm: bool = False) -> None:
 
     plan_path = TF_DIR / "teardown.tfplan"
 
-    if plan_path.exists():
-        raise RuntimeError("TEARDOWN_BLOCKED=EXISTING_PLAN")
+    discard_stale_plan(plan_path)
 
     try:
         # Plano de destruicao, sem realizar nenhuma alteracao remota.

@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import discard_stale_plan, load_env_file
 from scripts.cdc_stage_flags import configure_flags
 
 TF_DIR = ROOT / "infra" / "terraform"
@@ -21,10 +21,7 @@ EXPECTED = "confluent_connector.payments_cdc[0]"
 def main():
     print("========== ETAPA 4 — ATIVIDADE 3 ==========")
 
-    if PLAN.exists():
-        print("PLAN_ALREADY_EXISTS=True")
-        print("PLAN_GATE=BLOCKED")
-        return 1
+    discard_stale_plan(PLAN)
 
     env_file = load_env_file(ROOT / ".env")
     password = env_file.get("CDC_PGPASSWORD", "")

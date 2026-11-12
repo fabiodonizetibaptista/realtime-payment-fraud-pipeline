@@ -21,7 +21,7 @@ from confluent_kafka import Consumer, TopicPartition
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from safety import evidence_path  # noqa: E402
+from safety import archive_previous, evidence_path  # noqa: E402
 sys.path.insert(0, str(ROOT / "src" / "consumer"))
 
 from audit_cdc import kafka_credentials, terraform_state
@@ -36,8 +36,7 @@ EVIDENCE = evidence_path(ROOT, "cdc/stage5-cdc-lifecycle.json")
 def save_private(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    if path.exists():
-        raise RuntimeError("OUTPUT_ALREADY_EXISTS")
+    archive_previous(path)   # baseline/evidencia de tentativa anterior
 
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     descriptor = os.open(str(path), flags, 0o600)

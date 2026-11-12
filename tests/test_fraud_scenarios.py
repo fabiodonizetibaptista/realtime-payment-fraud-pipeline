@@ -59,22 +59,25 @@ class Etapa12ScenarioTests(unittest.TestCase):
 
         self.assertNotEqual(error.exception.code, 0)
 
-    def test_existing_manifest_prevents_reexecution(self):
-        # Mesmo com execucao autorizada, um manifesto existente
-        # impede repetir a ingestao acidentalmente.
-        with (
-            patch.object(scenarios.MANIFEST.__class__, "exists",
-                         return_value=True),
-            patch.object(
-                scenarios, "connect",
-                side_effect=AssertionError("DATABASE_ACCESSED"),
-            ),
-        ):
-            with self.assertRaisesRegex(
-                RuntimeError,
-                "SCENARIO_ALREADY_RECORDED",
+    def test_existing_manifest_is_archived_not_blocking(self):
+        # Uma tentativa anterior nao pode travar a nova: o manifesto antigo
+        # e arquivado (historico preservado) e o fluxo segue para os gates.
+        import tempfile
+        from pathlib import Path as _Path
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = _Path(tmp) / "etapa12-scenarios.json"
+            manifest.write_text('{"status": "STARTED"}', encoding="utf-8")
+            with (
+                patch.object(scenarios, "MANIFEST", manifest),
+                patch.object(scenarios, "connector_in_state", return_value=False),
+                patch.object(scenarios, "connect",
+                             side_effect=AssertionError("DATABASE_ACCESSED")),
             ):
-                scenarios.execute()
+                with self.assertRaisesRegex(RuntimeError, "CDC_CONNECTOR_NOT_IN_STATE"):
+                    scenarios.execute()
+            self.assertFalse(manifest.exists())
+            archived = list(_Path(tmp).glob("etapa12-scenarios.previous-*.json"))
+            self.assertEqual(len(archived), 1)
 
     def test_missing_connector_prevents_connection(self):
         with (

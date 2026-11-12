@@ -245,8 +245,8 @@ def main():
         if end <= start:
             raise ValueError("INVALID_DATE_RANGE")
 
-        if OUTPUT.exists():
-            raise ValueError("REPORT_ALREADY_EXISTS")
+        from safety import archive_previous
+        archive_previous(OUTPUT)   # coleta anterior: arquiva, nao bloqueia
 
         report = collect(start.isoformat(), end.isoformat(), args.environment, args.cluster)
         save(report)

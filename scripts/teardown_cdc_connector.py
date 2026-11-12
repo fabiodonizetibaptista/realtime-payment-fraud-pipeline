@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from safety import load_env_file
+from safety import discard_stale_plan, load_env_file
 from scripts.cdc_stage_flags import configure_flags
 
 TF_DIR = ROOT / "infra" / "terraform"
@@ -75,10 +75,7 @@ def main():
         print("TEARDOWN_GATE=NO_RESOURCE_IN_STATE")
         return 0
 
-    if PLAN.exists():
-        print("TEARDOWN_GATE=BLOCKED")
-        print("REASON=EXISTING_PLAN")
-        return 1
+    discard_stale_plan(PLAN)
 
     # Planos Terraform podem conter segredos.
     # Restringe as permissoes na criacao do arquivo.

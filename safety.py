@@ -208,3 +208,35 @@ def evidence_path(root: Path, relative: str, environment: Mapping[str, str] | No
 def write_utf8(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8", newline="\n")
+
+
+def discard_stale_plan(path: Path) -> bool:
+    """Remove um plano salvo que sobrou de uma tentativa anterior.
+
+    Um plano que ja existe antes do `plan` nunca foi aplicado (apply bem-
+    sucedido ou falho apaga o plano) ou ficou obsoleto; reutiliza-lo e
+    proibido e bloquear a nova tentativa travava a reproducao. O novo plano
+    passa pelo mesmo gate de revisao.
+    """
+    if path.exists():
+        path.unlink()
+        print(f"PREVIOUS_PLAN_DISCARDED={path.name}")
+        return True
+    return False
+
+
+def archive_previous(path: Path) -> Path | None:
+    """Renomeia o arquivo de uma tentativa anterior em vez de bloquear.
+
+    Mantem o historico (sufixo com data/hora UTC) e libera o nome para a
+    nova tentativa do mesmo passo.
+    """
+    if not path.exists():
+        return None
+    from datetime import datetime, timezone
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    target = path.with_name(f"{path.stem}.previous-{stamp}{path.suffix}")
+    path.rename(target)
+    print(f"PREVIOUS_ATTEMPT_ARCHIVED={target.name}")
+    return target

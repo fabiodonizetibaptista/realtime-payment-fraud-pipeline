@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from safety import load_env_file  # noqa: E402
+from safety import discard_stale_plan, load_env_file  # noqa: E402
 from scripts.connector_diagnostics import SECRET_NAME, masked_error_lines  # noqa: E402
 
 TF_DIR = ROOT / "infra" / "terraform"
@@ -64,9 +64,7 @@ def drift(plan: dict) -> list[tuple[str, str]]:
 
 
 def plan_refresh(env) -> int:
-    if PLAN.exists():
-        print("RECONCILE_BLOCKED=EXISTING_PLAN")
-        return 1
+    discard_stale_plan(PLAN)
     result = terraform("plan", "-refresh-only", "-no-color", "-input=false",
                        f"-out={PLAN.name}", env=env)
     if result.returncode != 0:

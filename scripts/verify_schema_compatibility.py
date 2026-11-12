@@ -17,7 +17,7 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from safety import evidence_path  # noqa: E402
+from safety import archive_previous, evidence_path  # noqa: E402
 sys.path.insert(0, str(ROOT / "src" / "consumer"))
 
 from audit_cdc import terraform_state
@@ -92,8 +92,7 @@ def test_candidate(endpoint, key, secret, original, candidate):
 def main():
     print("========== ETAPA 6 — COMPATIBILIDADE AVRO ==========")
 
-    if OUTPUT.exists():
-        raise RuntimeError("EVIDENCE_ALREADY_EXISTS")
+    archive_previous(OUTPUT)   # tentativa anterior: arquiva, nao bloqueia
 
     state = terraform_state()
     endpoint, key, secret = schema_registry_credentials(state)
