@@ -252,6 +252,10 @@ def apply_foundation(confirm: bool = False) -> None:
             "Terraform apply falhou. Diagnostico com secrets redigidos:\\n"
             + diagnostic
         ) from None
+    finally:
+        # Plano submetido ao apply nunca e reutilizavel (consumido ou stale),
+        # contem dados sensiveis e bloquearia a proxima execucao.
+        plan_path.unlink(missing_ok=True)
 
     print(
         f"FOUNDATION_APPLY_OK=True; RESOURCES={len(addresses)}"
@@ -439,6 +443,8 @@ def apply_pipeline(confirm: bool = False, allow_cdc: bool = False) -> None:
             "PIPELINE_APPLY_FAILED; verificar o estado Terraform "
             "por procedimento seguro antes de tentar novamente."
         ) from None
+    finally:
+        plan_path.unlink(missing_ok=True)
 
     print("PIPELINE_APPLY_OK=True")
 
@@ -514,6 +520,7 @@ def teardown(confirm: bool = False) -> None:
     approval = input("Digite DESTROY PIPELINE para confirmar: ")
 
     if approval != "DESTROY PIPELINE":
+        plan_path.unlink(missing_ok=True)
         print("TEARDOWN_CANCELLED=True")
         return
 
@@ -527,8 +534,11 @@ def teardown(confirm: bool = False) -> None:
         )
     except (RuntimeError, OSError):
         raise RuntimeError(
-            "TEARDOWN_FAILED=CHECK_TERRAFORM_STATE"
+            "TEARDOWN_FAILED=CHECK_TERRAFORM_STATE; nao repita: "
+            "python scripts/reconcile_state.py plan"
         ) from None
+    finally:
+        plan_path.unlink(missing_ok=True)
 
     print("TEARDOWN_COMPLETED=True")
 

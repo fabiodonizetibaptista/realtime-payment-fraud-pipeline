@@ -16,6 +16,10 @@ resource "confluent_kafka_acl" "flink_accounts_topic_read" {
   host       = "*"
   operation  = "READ"
   permission = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
 
 # Permite consultar o estado dos IDs transacionais do Flink.
@@ -28,6 +32,10 @@ resource "confluent_kafka_acl" "flink_transactional_id_read" {
   host       = "*"
   operation  = "READ"
   permission = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
 
 # Permite operar transacoes do Flink para processamento exactly-once.
@@ -40,4 +48,8 @@ resource "confluent_kafka_acl" "flink_transactional_id_write" {
   host       = "*"
   operation  = "WRITE"
   permission = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }

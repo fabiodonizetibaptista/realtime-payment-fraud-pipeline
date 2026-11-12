@@ -111,12 +111,17 @@ def main(show_error: bool = False):
 
     # O plano salvo ja contem as variaveis aprovadas.
     # Nao imprime output bruto: providers podem incluir dados sensiveis.
-    result = terraform(
-        "apply",
-        "-input=false",
-        "-no-color",
-        PLAN.name,
-    )
+    try:
+        result = terraform(
+            "apply",
+            "-input=false",
+            "-no-color",
+            PLAN.name,
+        )
+    finally:
+        # Plano submetido nunca e reutilizavel (consumido ou stale); remover
+        # evita PLAN_ALREADY_EXISTS no proximo plan_cdc_connector.
+        PLAN.unlink(missing_ok=True)
 
     print("TERRAFORM_APPLY_SUCCESS=", result.returncode == 0)
 

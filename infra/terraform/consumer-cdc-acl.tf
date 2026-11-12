@@ -11,4 +11,8 @@ resource "confluent_kafka_acl" "consumer_payments_topic_read" {
   host          = "*"
   operation     = "READ"
   permission    = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }

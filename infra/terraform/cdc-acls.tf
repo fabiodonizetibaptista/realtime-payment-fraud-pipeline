@@ -16,6 +16,10 @@ resource "confluent_kafka_acl" "cdc_topic_write" {
   host          = "*"
   operation     = "WRITE"
   permission    = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
 
 resource "confluent_kafka_acl" "cdc_topic_create" {
@@ -28,6 +32,10 @@ resource "confluent_kafka_acl" "cdc_topic_create" {
   host          = "*"
   operation     = "CREATE"
   permission    = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
 
 resource "confluent_kafka_acl" "cdc_cluster_describe" {
@@ -40,6 +48,10 @@ resource "confluent_kafka_acl" "cdc_cluster_describe" {
   host          = "*"
   operation     = "DESCRIBE"
   permission    = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
 
 resource "confluent_kafka_acl" "cdc_cluster_describe_configs" {
@@ -52,6 +64,10 @@ resource "confluent_kafka_acl" "cdc_cluster_describe_configs" {
   host          = "*"
   operation     = "DESCRIBE_CONFIGS"
   permission    = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
 
 # O ID do conector faz parte do nome do heartbeat Debezium.
@@ -70,4 +86,8 @@ resource "confluent_kafka_acl" "cdc_heartbeat" {
   host          = "*"
   operation     = each.value
   permission    = "ALLOW"
+
+  # O provider usa credenciais por variavel; sem esta aresta o destroy
+  # removeria a chave/cluster antes da ACL (401 no teardown).
+  depends_on = [confluent_api_key.iac_admin_kafka]
 }
