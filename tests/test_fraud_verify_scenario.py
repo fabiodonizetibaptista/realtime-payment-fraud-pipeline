@@ -58,5 +58,30 @@ class VerifyScenarioTests(unittest.TestCase):
             self.assertEqual(json.loads(saved)["scenario_alert_gate"], "PASS")
 
 
+class WaitForAlertTests(unittest.TestCase):
+    def run_wait(self, results):
+        from unittest.mock import patch
+        import scripts.fraud_scenarios as scenarios
+        calls = []
+
+        def fake_verify(runtime, save=True):
+            calls.append(save)
+            return {"SCENARIO_ALERT_GATE": results[min(len([c for c in calls if not c]) - 1, len(results) - 1)]}
+
+        with patch("scripts.fraud_stream.verify_scenario", side_effect=fake_verify):
+            ok = scenarios.wait_for_alert(attempts=3, interval_seconds=0, sleep=lambda s: None, runtime=object())
+        return ok, calls
+
+    def test_retries_until_pass_and_saves_once(self):
+        ok, calls = self.run_wait(["PENDING_OR_FAIL", "PASS"])
+        self.assertTrue(ok)
+        self.assertEqual(calls, [False, False, True])
+
+    def test_stop_condition_without_saving(self):
+        ok, calls = self.run_wait(["PENDING_OR_FAIL"])
+        self.assertFalse(ok)
+        self.assertNotIn(True, calls)
+
+
 if __name__ == "__main__":
     unittest.main()

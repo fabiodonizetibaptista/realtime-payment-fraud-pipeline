@@ -164,6 +164,32 @@ def main():
         parser.error("execute exige --confirm-execute")
 
     execute()
+    if not wait_for_alert():
+        raise SystemExit(1)
+
+
+def wait_for_alert(attempts=20, interval_seconds=30, sleep=None, runtime=None):
+    """Confirma o alerta do cenario no Flink (condicao de parada: 10 min).
+
+    O match depende do avanco do watermark, entao a primeira consulta pode
+    vir vazia. A evidencia (somente booleanos) e gravada no primeiro PASS.
+    """
+    import time
+
+    from scripts.fraud_stream import build_runtime, verify_scenario
+
+    sleep = sleep or time.sleep
+    runtime = runtime or build_runtime()
+    for attempt in range(1, attempts + 1):
+        result = verify_scenario(runtime, save=False)
+        if result["SCENARIO_ALERT_GATE"] == "PASS":
+            verify_scenario(runtime, save=True)
+            print(f"ALERT_CONFIRMATION=PASS; ATTEMPT={attempt}")
+            return True
+        if attempt < attempts:
+            sleep(interval_seconds)
+    print("ALERT_CONFIRMATION=NOT_OBSERVED; condicao de parada (10 min)")
+    return False
 
 
 if __name__ == "__main__":

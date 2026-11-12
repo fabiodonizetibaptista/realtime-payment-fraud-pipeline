@@ -165,7 +165,7 @@ def evaluate_scenario(rows, ids):
     }
 
 
-def verify_scenario(runtime):
+def verify_scenario(runtime, save=True):
     """Consulta somente matches que contenham IDs do cenario; imprime booleanos."""
     ids = load_manifest()
     sql = VERIFY_SQL.format(ids=", ".join(str(int(value)) for value in ids))
@@ -175,7 +175,8 @@ def verify_scenario(runtime):
     for key, value in result.items():
         print(f"{key}={value}")
     print("TRANSACTION_IDS_PRINTED=False")
-    save_scenario_evidence(result)
+    if save:
+        save_scenario_evidence(result)
     return result
 
 

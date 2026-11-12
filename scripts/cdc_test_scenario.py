@@ -62,6 +62,18 @@ def connector_in_state():
     return CONNECTOR in result.stdout.splitlines()
 
 
+LIFECYCLE = ROOT / "src" / "consumer" / "verify_cdc_lifecycle.py"
+
+
+def run_lifecycle(mode):
+    """Executa o verificador existente como processo separado."""
+    import subprocess
+    import sys
+
+    result = subprocess.run([sys.executable, str(LIFECYCLE), mode], cwd=ROOT, check=False)
+    return result.returncode
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
@@ -78,6 +90,11 @@ def main():
             raise RuntimeError("SCENARIO_RESULT_ALREADY_EXISTS")
         if not connector_in_state():
             raise RuntimeError("CDC_CONNECTOR_NOT_IN_STATE")
+        # Baseline de offset ANTES de qualquer mutacao: sem ele a
+        # verificacao do ciclo c/u/d/tombstone nao tem ponto de partida
+        # (na run-20261111 o passo foi esquecido e o cenario repetido).
+        if run_lifecycle("--baseline") != 0:
+            raise RuntimeError("LIFECYCLE_BASELINE_FAILED")
 
     connection = connect()
     try:
@@ -200,7 +217,8 @@ def main():
         print("SOURCE_TEST_RECORD_REMOVED=True")
         print("SECRETS_PRINTED=False")
         print("SCENARIO_GATE=PASS")
-        return 0
+        # Verificacao Avro do ciclo completo no Kafka (somente booleanos).
+        return run_lifecycle("--verify")
 
     except Exception:
         connection.rollback()
