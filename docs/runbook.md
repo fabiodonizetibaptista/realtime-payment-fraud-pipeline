@@ -14,8 +14,11 @@ Cada passo traz o critério de **PASS** e o que fazer se falhar.
 
 ### Opção A — GitHub Codespaces (recomendada; nada para instalar)
 
-1. No GitHub, abra o repositório → botão **Code** → aba **Codespaces** →
-   **Create codespace** (na branch que você quer executar).
+1. No GitHub, abra o repositório e **selecione a branch** no seletor de
+   branches (acima da lista de arquivos) → botão **Code** → aba
+   **Codespaces** → **Create codespace on &lt;branch&gt;**. Confira que o nome
+   do botão mostra a branch certa. Não reaproveite um Codespace antigo
+   listado ali: ele pode estar em outra branch ou ter resíduos.
 2. Espere a criação terminar: o [`.devcontainer`](../.devcontainer) instala
    sozinho Python 3.12, Terraform 1.16.2, Confluent CLI 4.81 (com checksum) e
    as dependências do `requirements.txt`. **Não crie venv nem rode `pip`.**
@@ -29,6 +32,8 @@ Cada passo traz o critério de **PASS** e o que fazer se falhar.
 
    Se algum faltar, a instalação automática falhou: rode
    `python .devcontainer/install_tools.py` e confira de novo.
+4. Confira a branch e o código: `git branch --show-current` deve mostrar a
+   branch escolhida, e não deve existir pasta `.venv`.
 
 O devcontainer também funciona localmente no VS Code com Docker Desktop
 (**Dev Containers: Reopen in Container**), com os mesmos passos 2 e 3.
@@ -58,10 +63,21 @@ Só quatro coisas mudam:
 
 ## Contas (uma vez)
 
-1. **Aiven:** um projeto existente e um token de API (`AIVEN_TOKEN`).
-2. **Confluent Cloud:** uma Cloud API key de um usuário/conta de serviço com
-   permissão de organização (criar environment, cluster, service accounts e
-   role bindings) — `CONFLUENT_CLOUD_API_KEY` e `CONFLUENT_CLOUD_API_SECRET`.
+Contas criadas com login do Google (ou outro SSO) funcionam normalmente.
+
+1. **Aiven:** um projeto existente e um token de API — no console da Aiven,
+   **User information → Tokens → Generate token** (`AIVEN_TOKEN`). A Aiven
+   não exige login no terminal: o token basta.
+2. **Confluent Cloud:** uma Cloud API key com permissão de organização (criar
+   environment, cluster, service accounts e role bindings) — no console,
+   **Administration → API keys → Add key → My account → Cloud resource
+   management** — `CONFLUENT_CLOUD_API_KEY` e `CONFLUENT_CLOUD_API_SECRET`.
+
+**Por que há duas credenciais da Confluent?** A API key do `.env` é usada pelo
+**Terraform** para criar e destruir recursos. A **Confluent CLI** usa a sua
+sessão de usuário (`confluent login`, no J0) para consultas e comandos do
+Flink — listar ACLs, conectores e statements, rodar SQL e ler o billing.
+O login é feito uma vez por Codespace/máquina.
 3. Copie `.env.example` para `.env` e preencha **só** estes quatro valores:
    `AIVEN_TOKEN`, `CONFLUENT_CLOUD_API_KEY`, `CONFLUENT_CLOUD_API_SECRET`,
    `TF_VAR_aiven_project`. Todo o resto é gerado pelos scripts.
@@ -77,15 +93,17 @@ Opcional: cloud/região/nomes da Confluent são variáveis Terraform
 ```bash
 python lab.py setup                 # terraform init + validate + checagem de CLIs
 python lab.py test                  # testes locais
-confluent login                     # no Codespaces/SSO: confluent login --no-browser
+confluent login --no-browser        # abra o link no navegador, entre (Google/SSO ou senha) e cole o código
 confluent environment list          # não pode existir "desafio-final"
 confluent billing promo list        # créditos disponíveis
 python -m scripts.check_configuration foundation
 export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d)   # isola as evidências desta execução
 ```
 
-**PASS:** `BOOTSTRAP_LOCAL_OK`, testes `OK`, nenhum `desafio-final` na lista,
-`CONFIG_STATUS=PRESENT_NOT_VERIFIED`.
+**PASS:** `BOOTSTRAP_LOCAL_OK`, testes `OK` (mais de 270), `Logged in as`,
+nenhum `desafio-final` na lista, `CONFIG_STATUS=PRESENT_NOT_VERIFIED`.
+**Se os testes forem bem menos que 270 ou `scripts.check_configuration` não
+existir:** você está numa branch antiga — volte ao passo de Ambiente.
 **Se falhar:** `desafio-final` já existe → é resíduo de outra execução; derrube-o
 (seção [Recuperação](#recuperação)) antes de seguir.
 **Armadilha (Windows):** variáveis `PG*` gravadas no perfil do usuário são

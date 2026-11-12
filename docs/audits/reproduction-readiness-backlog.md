@@ -37,6 +37,8 @@ documentação, corrigido e registrado aqui.
 | # | Etapa | O que não estava claro | Correção |
 |---|---|---|---|
 | D1 | Ambiente | O roteiro misturava Codespaces e máquina própria num parágrafo; o operador, já no Codespace, não sabia se devia criar venv e rodar `pip` | Seção "Ambiente" dividida em Opção A (Codespaces: nada para instalar, só conferir versões) e Opção B (máquina própria) |
+| D2 | Ambiente | O Codespace foi aberto numa branch antiga (`chore/project-finalization`, 152 testes) e nada indicava isso | Passo explícito para selecionar a branch antes de criar, não reaproveitar Codespace antigo e conferir `git branch --show-current`; J0 diz como reconhecer branch antiga |
+| D3 | J0 | `confluent login` tentou abrir navegador (conta Google/SSO) e falhou; não estava claro por que logar se as chaves já estão no `.env` | `confluent login --no-browser` como comando padrão; seção "Contas" explica onde gerar cada credencial e por que a CLI precisa de sessão própria |
 
 ## Objetivo e regras de execução
 
