@@ -135,10 +135,9 @@ antiga: volte ao passo de Ambiente.
 **J0.2 — Credenciais funcionam e conta está vazia**
 
 ```bash
-python scripts/check_cloud_credentials.py &&   # uma leitura em cada provedor
-confluent environment list > /tmp/envs.txt &&      # falha se a CLI não estiver logada
-! grep -q desafio-final /tmp/envs.txt &&            # não pode existir "desafio-final"
-confluent billing promo list &&
+python scripts/check_cloud_credentials.py &&   # as chaves do .env funcionam
+python scripts/check_clean_slate.py &&         # nada de tentativas anteriores na nuvem
+confluent billing promo list &&                # créditos (e confirma o login da CLI)
 export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d) &&
 echo ">>> J0.2 OK - siga para J1.1" || echo ">>> J0.2 FALHOU - pare e leia o erro acima"
 ```
@@ -150,8 +149,11 @@ echo ">>> J0.2 OK - siga para J1.1" || echo ">>> J0.2 FALHOU - pare e leia o err
   tem outro valor e vence o `.env`: `unset <VARIÁVEL>` e apague/atualize o secret.
 - `_SOURCE=DOTENV` e 401 → chave recém-criada leva 1–2 min para valer.
 - `AIVEN_CREDENTIALS=FAILED` → confira o token e o nome do projeto.
-- `CREDENTIALS_GATE=PASS` mas FALHOU → existe `desafio-final` (resíduo de outra
-  execução): derrube-o ([Recuperação](#recuperação)) antes de seguir.
+- `CONFLICT environment|service_account|aiven_service ...` → restos de uma
+  tentativa anterior que ficaram na nuvem fora do State; cada linha traz o
+  comando para remover (`NEXT_ACTION`). Remova e repita o bloco.
+- `STATE_NOT_EMPTY=True` → você está retomando uma execução já iniciada; a
+  checagem é pulada de propósito.
 
 **Windows:** variáveis `PG*` gravadas no perfil do usuário bloqueiam o J2
 (`POSTGRES_ENV_CONFLICT`); remova-as antes.
@@ -163,7 +165,7 @@ echo ">>> J0.2 OK - siga para J1.1" || echo ">>> J0.2 FALHOU - pare e leia o err
 
 ```bash
 python lab.py plan &&
-python lab.py review-plan &&                 # mostra CREATE_COUNT=14
+python lab.py review-plan &&                 # CREATE_COUNT=14 (ou só os que faltam)
 python lab.py apply --confirm-foundation &&  # digite APPLY FOUNDATION
 echo ">>> J1.1 OK - siga para J1.2" || echo ">>> J1.1 FALHOU - pare e leia o erro acima"
 ```
@@ -186,11 +188,14 @@ python lab.py apply-pipeline --confirm-pipeline &&  # digite APPLY PIPELINE
 echo ">>> J1.3 OK - siga para J2" || echo ">>> J1.3 FALHOU - pare e leia o erro acima"
 ```
 
-**Se um bloco do J1 falhar:** não repita às cegas. Veja o que existe com
-`terraform -chdir=infra/terraform state list`. Vazio (ex.: `401` em todos os
-recursos) → nada foi criado: corrija a causa e repita o bloco inteiro. Com
-recursos → [Recuperação](#recuperação). Depois do J1.3 **não rode
-`plan-pipeline` de novo**: as etapas seguintes têm scripts próprios.
+**Se um bloco falhar:** corrija a causa (o erro está acima do `FALHOU`) e
+**repita o bloco inteiro**. Isso é seguro em todo o roteiro: planos de
+tentativas anteriores são descartados (`PREVIOUS_PLAN_DISCARDED`), arquivos de
+tentativas anteriores são arquivados (`PREVIOUS_ATTEMPT_ARCHIVED`) e, se um
+apply criou só parte dos recursos, o novo plano cria apenas o que falta — os
+gates continuam recusando qualquer update/destroy inesperado.
+Depois do J1.3 **não rode `plan-pipeline` de novo**: as etapas seguintes têm
+scripts próprios.
 
 ## J2 — Origem PostgreSQL
 
@@ -341,7 +346,8 @@ Enquanto não aparecerem linhas de todos os dias da janela, o custo é parcial.
 
 | Situação | O que fazer |
 |---|---|
-| Apply falhou | **Não repita.** Planos já submetidos são apagados automaticamente; gere um plano novo pelo mesmo passo e revise. |
+| Um bloco falhou | Corrija a causa e repita o bloco inteiro: planos antigos são descartados, arquivos de tentativas anteriores arquivados e applies parciais completados só com o que falta. |
+| `CONFLICT ...` no J0.2 | Restos fora do State; rode o `NEXT_ACTION` de cada linha e repita o J0.2. |
 | Plano propõe update/destroy inesperado | Não aplique. Confira `terraform -chdir=infra/terraform state list`; o gate bloqueia sozinho. |
 | `lab.py teardown` falhou no meio | **Não repita.** `python scripts/reconcile_state.py plan` mostra o que mudou na nuvem; revise e rode `python scripts/reconcile_state.py apply --confirm`; depois um novo `lab.py teardown`. |
 | Conector criado fora do State (órfão) | `confluent connect cluster list ...` → `confluent connect cluster delete <id> ...`. |

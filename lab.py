@@ -138,6 +138,21 @@ def plan() -> None:
     print("FOUNDATION_PLAN_READY=True; nenhum recurso remoto foi criado ou alterado.")
 
 
+def prior_state_addresses(plan: dict) -> set[str]:
+    """Enderecos gerenciados que ja existiam no State quando o plano foi feito."""
+    found = set()
+
+    def visit(module):
+        for resource in (module or {}).get("resources", []) or []:
+            if resource.get("mode", "managed") == "managed" and resource.get("address"):
+                found.add(str(resource["address"]))
+        for child in (module or {}).get("child_modules", []) or []:
+            visit(child)
+
+    visit(((plan.get("prior_state") or {}).get("values") or {}).get("root_module"))
+    return found
+
+
 def validate_foundation_plan(plan: dict) -> list[str]:
     """Aceita somente a criacao exata dos recursos da primeira Foundation."""
     if plan.get("errored") is True:
@@ -150,8 +165,12 @@ def validate_foundation_plan(plan: dict) -> list[str]:
         raise RuntimeError("O plano contem enderecos de recursos duplicados.")
 
     actual = set(addresses)
-    missing = sorted(FOUNDATION_APPLY_RESOURCES - actual)
-    unexpected = sorted(actual - FOUNDATION_APPLY_RESOURCES)
+    # Recursos ja no State (apply anterior parcial) nao precisam ser criados:
+    # a nova tentativa completa so o que falta, sem afrouxar a allowlist.
+    existing = prior_state_addresses(plan) & FOUNDATION_APPLY_RESOURCES
+    expected = FOUNDATION_APPLY_RESOURCES - existing
+    missing = sorted(expected - actual)
+    unexpected = sorted(actual - expected)
 
     if missing or unexpected:
         raise RuntimeError(
@@ -219,6 +238,11 @@ def apply_foundation(confirm: bool = False) -> None:
         ) from None
 
     addresses = validate_foundation_plan(plan_data)
+
+    if not addresses:
+        plan_path.unlink(missing_ok=True)
+        print("FOUNDATION_ALREADY_PRESENT=True; nada a criar (os 14 recursos ja estao no State)")
+        return None
 
     print("========== FOUNDATION APPLY REVIEW ==========")
     print(f"RESOURCES_TO_CREATE={len(addresses)}")
