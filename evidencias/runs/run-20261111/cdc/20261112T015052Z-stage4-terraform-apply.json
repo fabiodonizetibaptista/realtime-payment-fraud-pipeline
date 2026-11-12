@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-11-12T01:50:52.456744+00:00",
+  "resource": "confluent_connector.payments_cdc[0]",
+  "planned_changes": 1,
+  "only_connector_create": true,
+  "terraform_apply_success": true,
+  "connector_in_state": true,
+  "gate": "PASS",
+  "secret_values_recorded": false
+}

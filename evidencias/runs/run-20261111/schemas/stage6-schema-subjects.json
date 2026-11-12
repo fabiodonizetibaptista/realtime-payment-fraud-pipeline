@@ -1,0 +1,69 @@
+{
+  "evidence_type": "RETROSPECTIVE_INVENTORY",
+  "generated_at_utc": "2026-11-12T02:11:22.608948+00:00",
+  "source": "schemas/registry/manifest.json",
+  "subjects": [
+    {
+      "subject": "payments.cdc_internal.heartbeat-key",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.cdc_internal.heartbeat-value",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.accounts-key",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.accounts-value",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.cards-key",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.cards-value",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.customers-key",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.customers-value",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.merchants-key",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.merchants-value",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.transactions-key",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    {
+      "subject": "payments.public.transactions-value",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    }
+  ],
+  "subject_count": 12,
+  "gate": "PASS"
+}

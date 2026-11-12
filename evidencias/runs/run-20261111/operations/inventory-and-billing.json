@@ -1,0 +1,39 @@
+﻿{
+    "captured_at_utc":  "2026-11-12T02:49:58.2206464Z",
+    "source":  "scripts/collect_operations_evidence.py collect (escopo explicito --environment/--cluster)",
+    "environment_name":  "desafio-final",
+    "period":  {
+                   "start":  "2026-11-12",
+                   "end_exclusive":  "2026-11-13"
+               },
+    "kafka_clusters":  [
+                           {
+                               "name":  "desafio-basic",
+                               "type":  "BASIC",
+                               "status":  "UP",
+                               "created_at":  null
+                           }
+                       ],
+    "flink_compute_pools":  [
+                                {
+                                    "name":  "payment-fraud-v2",
+                                    "status":  "PROVISIONED",
+                                    "max_cfu":  10
+                                }
+                            ],
+    "service_account_count_org":  8,
+    "kafka_acl_count":  14,
+    "acl_operations":  {
+                           "CREATE":  2,
+                           "DESCRIBE":  2,
+                           "DESCRIBE_CONFIGS":  1,
+                           "READ":  5,
+                           "WRITE":  4
+                       },
+    "billing":  {
+                    "status":  "BILLING_PENDENTE",
+                    "observed_environment_total_usd":  "0",
+                    "note":  "Confluent publica custos com atraso; reconsultar em 48-72 h (J7)."
+                },
+    "identifiers_recorded":  false
+}

@@ -1,0 +1,13 @@
+{
+  "evidence_type": "DERIVED_TEST_RESULT",
+  "generated_at_utc": "2026-11-12T02:11:22.608948+00:00",
+  "source": "evidencias/runs/run-20261111/schemas/stage6-compatibility.json",
+  "subject": "payments.public.transactions-value",
+  "tested_against_version": 1,
+  "compatibility": "BACKWARD",
+  "required_without_default_compatible": false,
+  "optional_with_default_compatible": true,
+  "schema_unchanged": true,
+  "version_2_registered": false,
+  "gate": "PASS"
+}
