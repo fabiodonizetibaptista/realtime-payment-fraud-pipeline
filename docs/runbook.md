@@ -68,10 +68,12 @@ Contas criadas com login do Google (ou outro SSO) funcionam normalmente.
 1. **Aiven:** um projeto existente e um token de API — no console da Aiven,
    **User information → Tokens → Generate token** (`AIVEN_TOKEN`). A Aiven
    não exige login no terminal: o token basta.
-2. **Confluent Cloud:** uma Cloud API key com permissão de organização (criar
-   environment, cluster, service accounts e role bindings) — no console,
+2. **Confluent Cloud:** uma **Cloud API key** (não uma chave de cluster) de um
+   usuário com permissão de organização — `CONFLUENT_CLOUD_API_KEY` e
+   `CONFLUENT_CLOUD_API_SECRET`. O jeito mais seguro é criá-la pela CLI no
+   J0.3 (`confluent api-key create --resource cloud`); pelo console é
    **Administration → API keys → Add key → My account → Cloud resource
-   management** — `CONFLUENT_CLOUD_API_KEY` e `CONFLUENT_CLOUD_API_SECRET`.
+   management**. O J0.3 confere se ela funciona antes de qualquer criação.
 
 **Por que há duas credenciais da Confluent?** A API key do `.env` é usada pelo
 **Terraform** para criar e destruir recursos. A **Confluent CLI** usa a sua
@@ -124,12 +126,26 @@ reconheceu a conta). Pressione Enter, confira o e-mail e repita o comando.
 **J0.3 — Conta vazia e créditos**
 
 ```bash
+python scripts/check_cloud_credentials.py   # as chaves do .env funcionam? (só leitura)
 confluent environment list          # não pode existir "desafio-final"
 confluent billing promo list        # créditos disponíveis
 export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d)   # isola as evidências desta execução
 ```
 
-**PASS:** nenhum `desafio-final` na lista; créditos suficientes para o teto.
+**PASS:** `CREDENTIALS_GATE=PASS`; nenhum `desafio-final` na lista; créditos
+suficientes para o teto.
+**Se `CONFLUENT_CREDENTIALS=FAILED HTTP=401`:** a chave do `.env` não é uma
+Cloud API key válida (por exemplo, é chave de cluster ou foi revogada). Crie
+uma pela CLI, já logada, e copie os dois valores para o `.env`:
+
+```bash
+confluent api-key create --resource cloud --description terraform-desafio
+clear    # limpa o segredo da tela depois de copiar
+```
+
+Rode `check_cloud_credentials.py` de novo até dar PASS.
+**Se `AIVEN_CREDENTIALS=FAILED`:** confira `AIVEN_TOKEN` e o nome técnico do
+projeto em `TF_VAR_aiven_project`.
 **Se `desafio-final` já existe:** é resíduo de outra execução; derrube-o
 (seção [Recuperação](#recuperação)) antes de seguir.
 **Armadilha (Windows):** variáveis `PG*` gravadas no perfil do usuário são
@@ -137,22 +153,39 @@ herdadas e bloqueiam o J2 (`POSTGRES_ENV_CONFLICT`); remova-as do ambiente.
 
 ## J1 — Fundação e recursos permanentes
 
+**J1.1 — Fundação** (environment, cluster Kafka Basic, Schema Registry,
+5 identidades e suas chaves: 14 recursos)
+
 ```bash
 python lab.py plan
 python lab.py review-plan                         # PASS: CREATE_COUNT=14, resto 0
 python lab.py apply --confirm-foundation          # digite APPLY FOUNDATION
-python -m scripts.export_foundation_env           # grava as variáveis geradas no .env
-python -m scripts.check_configuration pipeline
+```
+
+**PASS:** `FOUNDATION_APPLY_OK=True`.
+
+**J1.2 — Variáveis geradas**
+
+```bash
+python -m scripts.export_foundation_env           # grava as chaves geradas no .env
+python -m scripts.check_configuration pipeline    # PASS: CONFIG_STATUS=PRESENT_NOT_VERIFIED
+```
+
+**J1.3 — Pipeline** (Postgres Aiven, compute pool Flink, identidades do Flink
+e de métricas, role bindings: 16 recursos)
+
+```bash
 python lab.py plan-pipeline                       # rode UMA vez
 python lab.py review-plan --pipeline              # PASS: CREATE_COUNT=16, resto 0
 python lab.py apply-pipeline --confirm-pipeline   # digite APPLY PIPELINE (sem --allow-cdc)
 ```
 
-Cria: environment, cluster Kafka Basic, Schema Registry, 5 identidades e suas
-chaves (fundação, 14); Postgres Aiven, compute pool Flink, identidade do
-Flink, identidade de métricas e role bindings (pipeline, 16).
-**PASS:** `FOUNDATION_APPLY_OK=True`, `PIPELINE_APPLY_OK=True`.
-**Se falhar:** não repita o apply; veja [Recuperação](#recuperação).
+**PASS:** `PIPELINE_APPLY_OK=True`.
+**Se um apply falhar:** não repita. Confira o que existe com
+`terraform -chdir=infra/terraform state list`. Se estiver vazio (por exemplo,
+`401` em todos os recursos: credencial inválida), nada foi criado — corrija a
+causa e refaça o passo desde o `plan`. Se houver recursos, veja
+[Recuperação](#recuperação).
 Após este passo, **não rode `plan-pipeline` de novo**: as etapas seguintes têm
 scripts próprios que preservam o que já existe.
 
