@@ -4,7 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.connector_diagnostics import CATEGORIES, classify, write_diagnostic
+from scripts.connector_diagnostics import (
+    CATEGORIES, classify, masked_error_lines, write_diagnostic,
+)
 
 SECRETS = {
     "confluent_key": "ABCD1234EFGH5678",
@@ -77,6 +79,26 @@ class ConnectorDiagnosticsTests(unittest.TestCase):
                     self.assertNotIn(secret, saved)
                 self.assertNotIn("cdc_user", saved)
                 self.assertFalse(json.loads(saved)["provider_text_persisted"])
+
+    def test_masked_error_never_shows_secrets_even_when_unknown(self):
+        # Sem passar segredos conhecidos: so os padroes genericos atuam.
+        for name, text in SAMPLES.items():
+            with self.subTest(sample=name):
+                rendered = "\n".join(masked_error_lines("noise\n" + text))
+                self.assertTrue(rendered.startswith("Error:"))
+                for secret in SECRETS.values():
+                    self.assertNotIn(secret, rendered)
+
+    def test_masked_error_uses_known_exact_values(self):
+        text = "Error: provision failed for user cdc_user using short pw Ab12Cd34!"
+        rendered = "\n".join(masked_error_lines(text, ["Ab12Cd34!"]))
+        self.assertNotIn("Ab12Cd34!", rendered)
+        self.assertIn("cdc_user", rendered)  # contexto util preservado
+
+    def test_masked_error_strips_terraform_box_and_ignores_non_error_output(self):
+        text = "confluent_connector.x: Creating...\n╷\n│ Error: error creating Connector\n│ \n│   detail\n╵"
+        self.assertEqual(masked_error_lines(text), ["Error: error creating Connector", "  detail"])
+        self.assertEqual(masked_error_lines("Apply complete!"), [])
 
     def test_write_rejects_fields_outside_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

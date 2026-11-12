@@ -88,6 +88,57 @@ def classify(text: str) -> dict:
     }
 
 
+MASK = "<mascarado>"
+SECRET_NAME = re.compile(r"KEY|SECRET|PASSWORD|PASS|TOKEN|CERT|CA\b|_CA$", re.IGNORECASE)
+_GENERIC_MASKS = (
+    # Bloco PEM completo (ou truncado ate o fim do texto).
+    (re.compile(r"-----BEGIN [A-Z ]+-----.*?(?:-----END [A-Z ]+-----|\Z)", re.DOTALL), "<PEM mascarado>"),
+    # Credencial em URI: esquema://usuario:senha@
+    (re.compile(r"(\b[a-z][a-z0-9+.-]*://)[^\s:/@]+:[^\s@]+@", re.IGNORECASE), r"\1<mascarado>@"),
+    # "password":"x" / password=x / api_secret: x (JSON, querystring, logs)
+    (re.compile(
+        r"""(["']?[\w.-]*(?:password|passwd|secret|token|api[_.-]?key|sslrootcert|authorization)[\w.-]*["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;}\]]+)""",
+        re.IGNORECASE), r"\1" + MASK),
+    # Cabecalhos Authorization
+    (re.compile(r"\b(Bearer|Basic)\s+[A-Za-z0-9+/=._-]{8,}", re.IGNORECASE), r"\1 " + MASK),
+    # Qualquer string longa com cara de segredo (base64/hex/JWT/token)
+    (re.compile(r"[A-Za-z0-9+/=_.-]{32,}"), MASK),
+)
+
+
+def secret_fragments(values) -> list[str]:
+    """Valores exatos e cada linha longa deles (cobre PEM e multilinha)."""
+    fragments = set()
+    for value in values:
+        if not value or len(value) < 6:
+            continue
+        fragments.add(value)
+        fragments.update(line.strip() for line in value.splitlines() if len(line.strip()) >= 12)
+    return sorted(fragments, key=len, reverse=True)
+
+
+def mask_text(text: str, secrets=()) -> str:
+    """Mascara valores conhecidos e, depois, padroes genericos de segredo."""
+    for fragment in secret_fragments(secrets):
+        text = text.replace(fragment, MASK)
+    for pattern, replacement in _GENERIC_MASKS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+def masked_error_lines(text: str, secrets=(), limit: int = 40) -> list[str]:
+    """Somente o bloco de erro do Terraform, mascarado, para exibir na tela.
+
+    Nunca deve ser gravado em disco; o chamador apenas imprime.
+    """
+    lines = [re.sub(r"^[│╷╵] ?", "", line).rstrip() for line in (text or "").splitlines()]
+    start = next((i for i, line in enumerate(lines) if line.strip().startswith("Error:")), None)
+    if start is None:
+        return []
+    block = "\n".join(line for line in lines[start:] if line.strip())
+    return mask_text(block, secrets).splitlines()[:limit]
+
+
 def write_diagnostic(directory: Path, run_id: str, diagnostic: dict) -> Path:
     """Grava o diagnostico estruturado; recusa campos fora do contrato."""
     allowed = {"category", "rule_id", "http_status"}

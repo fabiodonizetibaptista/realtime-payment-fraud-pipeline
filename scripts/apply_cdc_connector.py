@@ -11,7 +11,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from safety import EVIDENCE_RUN_ID_PATTERN, evidence_path  # noqa: E402
-from scripts.connector_diagnostics import classify, write_diagnostic  # noqa: E402
+from safety import load_env_file  # noqa: E402
+from scripts.connector_diagnostics import (  # noqa: E402
+    SECRET_NAME, classify, masked_error_lines, write_diagnostic,
+)
 TF_DIR = ROOT / "infra" / "terraform"
 DIAGNOSTICS_DIR = ROOT / ".local" / "diagnostics"
 
@@ -26,6 +29,23 @@ PLAN = TF_DIR / "cdc-stage4.tfplan"
 ADDRESS = "confluent_connector.payments_cdc[0]"
 
 
+def execution_env() -> dict:
+    """Mesmo contrato de plan_cdc_connector: processo tem precedencia, .env completa.
+
+    Sem isso, o apply do plano salvo falha antes de chegar a Confluent
+    ("token is required for Aiven client") quando AIVEN_TOKEN e demais
+    credenciais de provider estao somente no .env.
+    """
+    env = dict(os.environ)
+    env_file = ROOT / ".env"
+    if env_file.is_file():
+        for key, value in load_env_file(env_file).items():
+            if value and not env.get(key):
+                env[key] = value
+    env["TF_LOG"] = "OFF"
+    return env
+
+
 def terraform(*args):
     return subprocess.run(
         ["terraform", *args],
@@ -33,11 +53,24 @@ def terraform(*args):
         capture_output=True,
         text=True,
         check=False,
-        env={**os.environ, "TF_LOG": "OFF"},
+        env=execution_env(),
     )
 
 
-def main():
+def known_secrets(plan: dict) -> list[str]:
+    """Valores sensiveis do plano, do .env e do ambiente (apenas em memoria)."""
+    values = []
+    for item in plan.get("resource_changes", []):
+        after = (item.get("change") or {}).get("after") or {}
+        values.extend(str(v) for v in (after.get("config_sensitive") or {}).values())
+    env_file = ROOT / ".env"
+    sources = [load_env_file(env_file) if env_file.is_file() else {}, dict(os.environ)]
+    for source in sources:
+        values.extend(v for k, v in source.items() if v and SECRET_NAME.search(k))
+    return values
+
+
+def main(show_error: bool = False):
     print("========== ETAPA 4 — ATIVIDADE 3: APPLY ==========")
 
     if not PLAN.is_file():
@@ -107,6 +140,13 @@ def main():
         print("DIAGNOSTIC_HTTP_STATUS=", diagnostic["http_status"])
         print("DIAGNOSTIC_FILE=", path.relative_to(ROOT).as_posix())
         print("ERROR_DETAILS_REDACTED=True")
+        if show_error:
+            # Exibido somente na tela, mascarado; nunca gravado em disco.
+            lines = masked_error_lines(result.stderr + "\n" + result.stdout, known_secrets(data))
+            print("===== ERRO DO PROVIDER (mascarado; nao gravado) =====")
+            for line in lines or ["<nenhuma linha Error: encontrada>"]:
+                print(line)
+            print("===== FIM DO ERRO =====")
         print("NEXT_ACTION=Verificar conector orfao: confluent connect cluster list --environment <env> --cluster <lkc>")
         print("APPLY_GATE=BLOCKED")
         return 1
@@ -144,10 +184,14 @@ if __name__ == "__main__":
         description="Aplica um plano Terraform previamente aprovado "
                     "para criar exclusivamente o conector CDC."
     )
-    parser.parse_args()
+    parser.add_argument(
+        "--show-error", action="store_true",
+        help="em caso de falha, exibe na tela o erro do provider mascarado (nao grava)",
+    )
+    args = parser.parse_args()
 
     try:
-        raise SystemExit(main())
+        raise SystemExit(main(show_error=args.show_error))
     except Exception as error:
         print("ERROR_TYPE=", type(error).__name__)
         print("APPLY_GATE=BLOCKED")
