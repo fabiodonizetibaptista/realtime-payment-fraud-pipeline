@@ -1,9 +1,9 @@
 # Marco 4 - Foundation do desafio DIO.
-# Os nomes e a regiao seguem o template de entrega do desafio.
+# Nomes, cloud e regiao sao variaveis (variables.tf) com os padroes do desafio.
 # Nenhum ID ou endpoint da V1 e reutilizado.
 
 resource "confluent_environment" "challenge" {
-  display_name = "desafio-final"
+  display_name = var.confluent_environment_name
 
   stream_governance {
     package = "ESSENTIALS"
@@ -11,10 +11,10 @@ resource "confluent_environment" "challenge" {
 }
 
 resource "confluent_kafka_cluster" "basic" {
-  display_name = "desafio-basic"
+  display_name = var.kafka_cluster_name
   availability = "SINGLE_ZONE"
-  cloud        = "AWS"
-  region       = "us-east-1"
+  cloud        = var.confluent_cloud
+  region       = var.confluent_region
 
   basic {}
 

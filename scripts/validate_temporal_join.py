@@ -17,6 +17,7 @@ ROOT = Path.cwd()
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from safety import evidence_path  # noqa: E402
+from scripts.flink_portability import render_sql  # noqa: E402
 TF = ROOT / "infra/terraform"
 SQL = ROOT / "sql/enrichment/04_temporal_join.sql"
 
@@ -26,8 +27,7 @@ ENV.pop("TF_LOG_PATH", None)
 suffix = uuid.uuid4().hex[:16]
 table_name = f"etapa9_temporal_validacao_{suffix}"
 statement_name = f"etapa9-temporal-{suffix}"
-catalog = "`desafio-final`.`desafio-basic`"
-target = f"{catalog}.`{table_name}`"
+# catalog/target/cloud/region sao definidos apos ler o Terraform State.
 
 
 def run(args, cwd=ROOT, timeout=90):
@@ -104,6 +104,27 @@ try:
 except RuntimeError:
     raise SystemExit("BLOCKED_RESOURCE_REFERENCE")
 
+
+def attributes(state, kind):
+    for obj in state.get("resources", []):
+        if obj.get("mode") == "managed" and obj.get("type") == kind:
+            for inst in obj.get("instances", []):
+                return inst.get("attributes") or {}
+    return {}
+
+
+# Cloud/regiao vem do pool e catalogo/banco dos nomes do environment e do
+# cluster no State (antes eram fixos em aws/us-east-1/desafio-final).
+pool_attributes = attributes(current, "confluent_flink_compute_pool")
+cloud = str(pool_attributes.get("cloud") or "").lower()
+region = str(pool_attributes.get("region") or "")
+catalog_name = str(attributes(current, "confluent_environment").get("display_name") or "")
+database_name = str(attributes(current, "confluent_kafka_cluster").get("display_name") or "")
+if not all((cloud, region, catalog_name, database_name)):
+    raise SystemExit("BLOCKED_RESOURCE_REFERENCE")
+catalog = f"`{catalog_name}`.`{database_name}`"
+target = f"{catalog}.`{table_name}`"
+
 auth = run(["confluent", "environment", "list", "-o", "json"], timeout=25)
 if auth is None or auth.returncode != 0:
     raise SystemExit("BLOCKED_CLI_AUTHENTICATION")
@@ -112,8 +133,8 @@ flags = [
     "--compute-pool", pool,
     "--database", cluster,
     "--environment", environment,
-    "--cloud", "aws",
-    "--region", "us-east-1",
+    "--cloud", cloud,
+    "--region", region,
 ]
 
 # Remove apenas comentarios iniciais e BOM da copia em memoria.
@@ -138,6 +159,8 @@ while True:
         break
 
 original = raw.rstrip(";").strip()
+# Copia em memoria com o catalogo/banco reais; o arquivo nao e alterado.
+original = render_sql(original, catalog_name, database_name)
 
 sql_valid = (
     original.upper().startswith("SELECT")
@@ -243,8 +266,8 @@ try:
                 "confluent", "flink", "statement", "describe",
                 statement_name,
                 "--environment", environment,
-                "--cloud", "aws",
-                "--region", "us-east-1",
+                "--cloud", cloud,
+                "--region", region,
                 "--output", "json",
             ], timeout=30)
 
@@ -439,8 +462,8 @@ finally:
             "confluent", "flink", "statement", "delete",
             statement_name,
             "--environment", environment,
-            "--cloud", "aws",
-            "--region", "us-east-1",
+            "--cloud", cloud,
+            "--region", region,
             "--force",
         ], timeout=60)
 

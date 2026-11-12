@@ -8,8 +8,8 @@
 
 resource "confluent_flink_compute_pool" "payment_fraud" {
   display_name = "payment-fraud-v2"
-  cloud        = "AWS"
-  region       = "us-east-1"
+  cloud        = confluent_kafka_cluster.basic.cloud
+  region       = confluent_kafka_cluster.basic.region
   max_cfu      = 10
   default_pool = false
 

@@ -139,3 +139,36 @@ variable "enable_subject_compatibility" {
   type        = bool
   default     = false
 }
+
+# Localizacao e nomes da Confluent. Os padroes reproduzem a execucao
+# validada (run-20261111); quem reproduzir pode trocar sem editar codigo.
+# O compute pool Flink usa a mesma cloud/regiao do cluster (requisito da
+# Confluent para ler os topicos). Scripts leem estes valores do State.
+variable "confluent_cloud" {
+  description = "Provedor do cluster Kafka e do compute pool Flink (AWS, GCP ou AZURE)."
+  type        = string
+  default     = "AWS"
+
+  validation {
+    condition     = contains(["AWS", "GCP", "AZURE"], var.confluent_cloud)
+    error_message = "Use AWS, GCP ou AZURE (maiusculas)."
+  }
+}
+
+variable "confluent_region" {
+  description = "Regiao do cluster Kafka e do compute pool Flink (ex.: us-east-1)."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "confluent_environment_name" {
+  description = "Nome do environment Confluent; tambem e o catalogo Flink."
+  type        = string
+  default     = "desafio-final"
+}
+
+variable "kafka_cluster_name" {
+  description = "Nome do cluster Kafka; tambem e o database Flink."
+  type        = string
+  default     = "desafio-basic"
+}
