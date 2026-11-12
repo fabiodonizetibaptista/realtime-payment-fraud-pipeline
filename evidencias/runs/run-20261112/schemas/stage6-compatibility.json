@@ -1,0 +1,21 @@
+{
+  "checked_at_utc": "2026-11-12T18:00:51.461059+00:00",
+  "subject": "payments.public.transactions-value",
+  "original_version": 1,
+  "compatibility_mode": "BACKWARD",
+  "required_without_default": {
+    "field": "stage6_required_field",
+    "is_compatible": false,
+    "expected": false
+  },
+  "optional_with_default": {
+    "field": "stage6_optional_field",
+    "is_compatible": true,
+    "expected": true
+  },
+  "original_schema_unchanged": true,
+  "new_schema_registered": false,
+  "credentials_recorded": false,
+  "schema_contents_recorded": false,
+  "gate": "PASS"
+}
