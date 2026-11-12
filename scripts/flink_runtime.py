@@ -20,6 +20,10 @@ from typing import Callable
 ROOT = Path(__file__).resolve().parents[1]
 
 
+DELETE_WAIT_ATTEMPTS = 18   # 18 x 10 s = 3 min
+DELETE_WAIT_SECONDS = 10
+
+
 class FlinkRuntimeError(RuntimeError):
     """Safe error that does not expose command output or credentials."""
 
@@ -389,9 +393,28 @@ class FlinkRuntime:
         ]
         names = [name for name in names if name]
         for name in names:
-            self.delete_statement(name)
-        if self.list_statements():
-            raise FlinkRuntimeError("FLINK_STATEMENTS_REMAIN_AFTER_DELETE")
+            try:
+                self.delete_statement(name)
+            except FlinkRuntimeError:
+                # Pode ja estar sendo removido; a espera abaixo decide.
+                pass
+
+        # A remocao na Confluent e assincrona: o statement continua listado
+        # por alguns segundos (na execucao guiada, 35 statements ainda
+        # apareciam logo apos o delete). Espera a lista esvaziar.
+        import time
+
+        sleep = getattr(self, "sleep", time.sleep)
+        remaining = self.list_statements()
+        for _ in range(DELETE_WAIT_ATTEMPTS):
+            if not remaining:
+                return len(names)
+            sleep(DELETE_WAIT_SECONDS)
+            remaining = self.list_statements()
+        if remaining:
+            raise FlinkRuntimeError(
+                f"FLINK_STATEMENTS_REMAIN_AFTER_DELETE_{len(remaining)}"
+            )
         return len(names)
 
     def wait_for_statement(

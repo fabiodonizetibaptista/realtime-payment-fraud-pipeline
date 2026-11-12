@@ -570,12 +570,15 @@ def teardown(confirm: bool = False) -> None:
         return CANCELLED
 
     if flink is not None:
+        print("Apagando statements Flink e aguardando a remocao (ate 3 min)...")
         try:
             deleted = flink.delete_all_statements()
-        except Exception:
+        except Exception as error:
             plan_path.unlink(missing_ok=True)
+            # Codigos de FlinkRuntimeError sao textos controlados, sem saida da CLI.
+            code = str(error) if error.__class__.__name__ == "FlinkRuntimeError" else type(error).__name__
             raise RuntimeError(
-                "TEARDOWN_BLOCKED=FLINK_STATEMENT_DELETE_FAILED; "
+                f"TEARDOWN_BLOCKED=FLINK_STATEMENT_DELETE_FAILED ({code}); "
                 "nenhum recurso Terraform foi destruido"
             ) from None
         print(f"FLINK_STATEMENTS_DELETED={deleted}")

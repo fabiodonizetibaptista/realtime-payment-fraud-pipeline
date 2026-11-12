@@ -321,8 +321,12 @@ confluent iam service-account list > /tmp/sas.txt &&
 echo ">>> J6 OK - tudo derrubado" || echo ">>> J6 FALHOU - pare e leia o erro acima"
 ```
 
-O teardown apaga primeiro os statements Flink e depois todos os recursos do
-State, incluindo a identidade de métricas. No console da Aiven, confirme que o
+O teardown apaga primeiro os statements Flink — e espera até 3 min, porque a
+remoção na Confluent é assíncrona — e só depois destrói os recursos do State,
+incluindo a identidade de métricas. Se ele parar com
+`FLINK_STATEMENT_DELETE_FAILED (...)`, nada do Terraform foi destruído: veja
+o que sobrou com `confluent flink statement list --environment $ENV_ID
+--cloud <cloud> --region <região>` e repita o bloco. No console da Aiven, confirme que o
 serviço `payments-postgres` não existe mais. Para deixar o clone pronto para
 outra execução do zero:
 
