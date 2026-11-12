@@ -90,21 +90,47 @@ Opcional: cloud/região/nomes da Confluent são variáveis Terraform
 
 ## J0 — Preparação (sem custo)
 
+> **Como executar os blocos deste roteiro:** cole um bloco por vez e confira o
+> PASS antes do próximo. Se um comando falhar, pare ali: os seguintes
+> dependem dele. Nada no J0 cria recursos — repetir é seguro.
+
+**J0.1 — Código e `.env` (sem nuvem)**
+
 ```bash
 python lab.py setup                 # terraform init + validate + checagem de CLIs
 python lab.py test                  # testes locais
-confluent login --no-browser        # abra o link no navegador, entre (Google/SSO ou senha) e cole o código
+python -m scripts.check_configuration foundation
+```
+
+**PASS:** `BOOTSTRAP_LOCAL_OK`, testes `OK` (mais de 270),
+`CONFIG_STATUS=PRESENT_NOT_VERIFIED`.
+**Se `MISSING_KEYS=...`:** preencha essas variáveis no `.env` (seção Contas) e
+rode só o `check_configuration` de novo.
+**Se os testes forem bem menos que 270 ou `scripts.check_configuration` não
+existir:** você está numa branch antiga — volte ao passo de Ambiente.
+
+**J0.2 — Login na Confluent CLI**
+
+```bash
+confluent login --no-browser
+```
+
+Digite o e-mail da conta. Contas Google/SSO **não pedem senha**: a CLI mostra
+um link — abra no navegador do seu computador, entre e cole o código exibido.
+**PASS:** `Logged in as "..."`.
+**Se pedir senha numa conta Google:** o e-mail foi digitado errado (a CLI não
+reconheceu a conta). Pressione Enter, confira o e-mail e repita o comando.
+
+**J0.3 — Conta vazia e créditos**
+
+```bash
 confluent environment list          # não pode existir "desafio-final"
 confluent billing promo list        # créditos disponíveis
-python -m scripts.check_configuration foundation
 export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d)   # isola as evidências desta execução
 ```
 
-**PASS:** `BOOTSTRAP_LOCAL_OK`, testes `OK` (mais de 270), `Logged in as`,
-nenhum `desafio-final` na lista, `CONFIG_STATUS=PRESENT_NOT_VERIFIED`.
-**Se os testes forem bem menos que 270 ou `scripts.check_configuration` não
-existir:** você está numa branch antiga — volte ao passo de Ambiente.
-**Se falhar:** `desafio-final` já existe → é resíduo de outra execução; derrube-o
+**PASS:** nenhum `desafio-final` na lista; créditos suficientes para o teto.
+**Se `desafio-final` já existe:** é resíduo de outra execução; derrube-o
 (seção [Recuperação](#recuperação)) antes de seguir.
 **Armadilha (Windows):** variáveis `PG*` gravadas no perfil do usuário são
 herdadas e bloqueiam o J2 (`POSTGRES_ENV_CONFLICT`); remova-as do ambiente.

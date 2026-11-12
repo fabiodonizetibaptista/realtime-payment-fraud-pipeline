@@ -39,6 +39,7 @@ documentação, corrigido e registrado aqui.
 | D1 | Ambiente | O roteiro misturava Codespaces e máquina própria num parágrafo; o operador, já no Codespace, não sabia se devia criar venv e rodar `pip` | Seção "Ambiente" dividida em Opção A (Codespaces: nada para instalar, só conferir versões) e Opção B (máquina própria) |
 | D2 | Ambiente | O Codespace foi aberto numa branch antiga (`chore/project-finalization`, 152 testes) e nada indicava isso | Passo explícito para selecionar a branch antes de criar, não reaproveitar Codespace antigo e conferir `git branch --show-current`; J0 diz como reconhecer branch antiga |
 | D3 | J0 | `confluent login` tentou abrir navegador (conta Google/SSO) e falhou; não estava claro por que logar se as chaves já estão no `.env` | `confluent login --no-browser` como comando padrão; seção "Contas" explica onde gerar cada credencial e por que a CLI precisa de sessão própria |
+| D4 | J0 | Erro de digitação no e-mail fez a CLI pedir senha; como o J0 era um bloco único, os comandos seguintes rodaram e falharam em cascata, e o `.env` incompleto só apareceu no fim | J0 dividido em J0.1 (código e `.env`, sem nuvem), J0.2 (login) e J0.3 (conta vazia), cada um com PASS; regra "um bloco por vez, pare no primeiro erro"; dica para o pedido de senha em conta Google |
 
 ## Objetivo e regras de execução
 
