@@ -41,6 +41,7 @@ documentação, corrigido e registrado aqui.
 | D3 | J0 | `confluent login` tentou abrir navegador (conta Google/SSO) e falhou; não estava claro por que logar se as chaves já estão no `.env` | `confluent login --no-browser` como comando padrão; seção "Contas" explica onde gerar cada credencial e por que a CLI precisa de sessão própria |
 | D4 | J0 | Erro de digitação no e-mail fez a CLI pedir senha; como o J0 era um bloco único, os comandos seguintes rodaram e falharam em cascata, e o `.env` incompleto só apareceu no fim | J0 dividido em J0.1 (código e `.env`, sem nuvem), J0.2 (login) e J0.3 (conta vazia), cada um com PASS; regra "um bloco por vez, pare no primeiro erro"; dica para o pedido de senha em conta Google |
 | D5 | J1 | A Cloud API key do `.env` era inválida (401 em todos os creates); o J0 só conferia presença, então o erro apareceu no apply; o J1 também era um bloco único e seguiu em cascata (os gates bloquearam, nada foi criado) | Novo `scripts/check_cloud_credentials.py` no J0.3 (leitura em cada provedor, só status); criação da Cloud key pela CLI; J1 dividido em J1.1/J1.2/J1.3 com orientação para apply falho com State vazio |
+| D6 | J0.3 | Com uma Cloud key nova no `.env`, a checagem ainda deu 401; o ambiente do processo (ex.: Codespaces secret antigo) tem precedência sobre o `.env` e nada mostrava isso | `check_cloud_credentials.py` mostra a origem de cada credencial (`ENVIRONMENT`/`DOTENV`/`CONFLICT`) e bloqueia em conflito; roteiro explica `unset` e onde apagar o secret |
 
 ## Objetivo e regras de execução
 

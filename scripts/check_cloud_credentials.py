@@ -65,11 +65,47 @@ def check(environment, opener=urllib.request.urlopen) -> dict:
     return results
 
 
+CREDENTIAL_KEYS = (
+    "CONFLUENT_CLOUD_API_KEY", "CONFLUENT_CLOUD_API_SECRET",
+    "AIVEN_TOKEN", "TF_VAR_aiven_project",
+)
+
+
+def credential_sources(process, dotenv) -> dict:
+    """De onde cada credencial vem; o ambiente do processo tem precedencia.
+
+    Codespaces secrets e variaveis do perfil chegam como ambiente e vencem o
+    .env silenciosamente — causa de 401 com uma chave nova no .env.
+    """
+    sources = {}
+    for key in CREDENTIAL_KEYS:
+        in_process, in_file = bool(process.get(key)), bool(dotenv.get(key))
+        if in_process and in_file and process[key] != dotenv[key]:
+            sources[key] = "CONFLICT"
+        elif in_process:
+            sources[key] = "ENVIRONMENT"
+        elif in_file:
+            sources[key] = "DOTENV"
+        else:
+            sources[key] = "MISSING"
+    return sources
+
+
 def main() -> int:
     argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
-    environment = {**load_env_file(ROOT / ".env"), **{k: v for k, v in os.environ.items() if v}} \
-        if (ROOT / ".env").is_file() else dict(os.environ)
+    dotenv = load_env_file(ROOT / ".env") if (ROOT / ".env").is_file() else {}
+    process = {k: v for k, v in os.environ.items() if v}
+    environment = {**dotenv, **process}
     passed = True
+    for key, source in credential_sources(process, dotenv).items():
+        print(f"{key}_SOURCE={source}")
+        if source == "CONFLICT":
+            print(
+                f"{key}_NEXT_ACTION=O ambiente (ex.: Codespaces secret ou perfil) "
+                "tem outro valor e vence o .env; remova-o do ambiente "
+                f"(unset {key}) e apague o secret antigo em github.com/settings/codespaces"
+            )
+            passed = False
     for provider, status in check(environment).items():
         if status is None:
             print(f"{provider}_CREDENTIALS=MISSING")

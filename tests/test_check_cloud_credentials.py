@@ -62,5 +62,30 @@ class CloudCredentialTests(unittest.TestCase):
             self.assertNotIn(value, text)
 
 
+class CredentialSourceTests(unittest.TestCase):
+    def test_conflict_environment_dotenv_missing(self):
+        process = {"CONFLUENT_CLOUD_API_KEY": "old-codespaces-secret", "AIVEN_TOKEN": "same"}
+        dotenv = {"CONFLUENT_CLOUD_API_KEY": "new-key", "CONFLUENT_CLOUD_API_SECRET": "s", "AIVEN_TOKEN": "same"}
+        sources = creds.credential_sources(process, dotenv)
+        self.assertEqual(sources["CONFLUENT_CLOUD_API_KEY"], "CONFLICT")
+        self.assertEqual(sources["CONFLUENT_CLOUD_API_SECRET"], "DOTENV")
+        self.assertEqual(sources["AIVEN_TOKEN"], "ENVIRONMENT")
+        self.assertEqual(sources["TF_VAR_aiven_project"], "MISSING")
+
+    def test_conflict_blocks_without_printing_values(self):
+        output = io.StringIO()
+        with patch.object(creds, "load_env_file", return_value={**ENV, "CONFLUENT_CLOUD_API_KEY": "NEWKEY0000000001"}), \
+             patch.dict(creds.os.environ, {"CONFLUENT_CLOUD_API_KEY": "OLDKEY0000000001"}, clear=True), \
+             patch.object(creds, "check", return_value={"CONFLUENT": 401, "AIVEN": 200}), \
+             patch("sys.argv", ["check_cloud_credentials.py"]), \
+             contextlib.redirect_stdout(output):
+            code = creds.main()
+        text = output.getvalue()
+        self.assertEqual(code, 1)
+        self.assertIn("CONFLUENT_CLOUD_API_KEY_SOURCE=CONFLICT", text)
+        self.assertNotIn("NEWKEY0000000001", text)
+        self.assertNotIn("OLDKEY0000000001", text)
+
+
 if __name__ == "__main__":
     unittest.main()

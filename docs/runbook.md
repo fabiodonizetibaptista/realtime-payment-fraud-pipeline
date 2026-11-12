@@ -143,7 +143,15 @@ confluent api-key create --resource cloud --description terraform-desafio
 clear    # limpa o segredo da tela depois de copiar
 ```
 
-Rode `check_cloud_credentials.py` de novo até dar PASS.
+Rode `check_cloud_credentials.py` de novo até dar PASS. Ele também mostra de
+onde veio cada credencial (`_SOURCE=`):
+- `CONFLICT`: existe a mesma variável no ambiente com outro valor — por
+  exemplo, um **Codespaces secret** antigo ou uma variável do perfil — e ela
+  **vence o `.env`**. Rode `unset <VARIÁVEL>` (PowerShell:
+  `Remove-Item Env:<VARIÁVEL>`) e apague o secret antigo em
+  github.com/settings/codespaces.
+- `DOTENV` e ainda 401: uma chave recém-criada pode levar 1–2 minutos para
+  valer; confira também se o valor foi colado sem aspas nem espaços.
 **Se `AIVEN_CREDENTIALS=FAILED`:** confira `AIVEN_TOKEN` e o nome técnico do
 projeto em `TF_VAR_aiven_project`.
 **Se `desafio-final` já existe:** é resíduo de outra execução; derrube-o
