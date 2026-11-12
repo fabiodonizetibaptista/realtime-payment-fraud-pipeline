@@ -345,22 +345,54 @@ class FlinkRuntime:
             "FLINK_STATEMENT_LIST_RESPONSE_INVALID"
         )
 
+    @staticmethod
+    def statement_name(statement):
+        metadata = statement.get("metadata") or {}
+        spec = statement.get("spec") or {}
+        return (
+            statement.get("name")
+            or metadata.get("name")
+            or spec.get("name")
+        )
+
     def find_statement(self, name):
         """Find a statement by its stable name."""
         for statement in self.list_statements():
-            metadata = statement.get("metadata") or {}
-            spec = statement.get("spec") or {}
-
-            statement_name = (
-                statement.get("name")
-                or metadata.get("name")
-                or spec.get("name")
-            )
-
-            if statement_name == name:
+            if self.statement_name(statement) == name:
                 return statement
 
         return None
+
+    def delete_statement(self, name):
+        """Delete one statement by name (environment/cloud/region explicit)."""
+        self._validate_statement(name, "-")
+        self._execute(
+            [
+                "confluent", "flink", "statement", "delete", name,
+                *self.config.common_flags(),
+                "--force",
+            ],
+            timeout=60,
+            operation="FLINK_STATEMENT_DELETE",
+        )
+
+    def delete_all_statements(self):
+        """Delete every statement of the configured pool; return the count.
+
+        Statements are not Terraform resources: a forgotten continuous
+        statement keeps consuming CFUs, and teardown must not depend on a
+        manual CLI loop (run-20261111 needed one for 44 statements).
+        """
+        names = [
+            self.statement_name(statement)
+            for statement in self.list_statements()
+        ]
+        names = [name for name in names if name]
+        for name in names:
+            self.delete_statement(name)
+        if self.list_statements():
+            raise FlinkRuntimeError("FLINK_STATEMENTS_REMAIN_AFTER_DELETE")
+        return len(names)
 
     def wait_for_statement(
         self,

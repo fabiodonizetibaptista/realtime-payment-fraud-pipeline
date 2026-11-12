@@ -449,6 +449,18 @@ def apply_pipeline(confirm: bool = False, allow_cdc: bool = False) -> None:
     print("PIPELINE_APPLY_OK=True")
 
 
+FLINK_POOL_ADDRESS = "confluent_flink_compute_pool.payment_fraud"
+
+
+def teardown_flink_runtime(actions):
+    """Runtime Flink quando o destroy inclui o compute pool; senao None."""
+    if not any(item.get("address") == FLINK_POOL_ADDRESS for item in actions):
+        return None
+    from scripts.flink_runtime import FlinkRuntime
+
+    return FlinkRuntime.from_terraform_state()
+
+
 def teardown(confirm: bool = False) -> None:
     """Destroi somente os recursos do Terraform State atual.
 
@@ -512,8 +524,18 @@ def teardown(confirm: bool = False) -> None:
         print("TEARDOWN_SKIPPED=NO_RESOURCES")
         return
 
+    # Statements Flink nao sao recursos Terraform: sao listados antes da
+    # aprovacao e apagados depois dela, antes do destroy do pool/environment.
+    try:
+        flink = teardown_flink_runtime(actions)
+        statements = len(flink.list_statements()) if flink else 0
+    except Exception:
+        plan_path.unlink(missing_ok=True)
+        raise RuntimeError("TEARDOWN_BLOCKED=FLINK_STATEMENTS_UNVERIFIED") from None
+
     print("=== TERRAFORM TEARDOWN REVIEW ===")
     print(f"DESTROY_COUNT={len(actions)}")
+    print(f"FLINK_STATEMENTS_TO_DELETE={statements}")
     print("WARNING=ALL_RESOURCES_IN_CURRENT_TERRAFORM_STATE")
     print("WARNING=DESTRUCTION_MAY_BE_IRREVERSIBLE")
 
@@ -523,6 +545,17 @@ def teardown(confirm: bool = False) -> None:
         plan_path.unlink(missing_ok=True)
         print("TEARDOWN_CANCELLED=True")
         return
+
+    if flink is not None:
+        try:
+            deleted = flink.delete_all_statements()
+        except Exception:
+            plan_path.unlink(missing_ok=True)
+            raise RuntimeError(
+                "TEARDOWN_BLOCKED=FLINK_STATEMENT_DELETE_FAILED; "
+                "nenhum recurso Terraform foi destruido"
+            ) from None
+        print(f"FLINK_STATEMENTS_DELETED={deleted}")
 
     try:
         # Aplicar exclusivamente o plano previamente revisado.

@@ -80,5 +80,56 @@ class PlanCleanupTests(unittest.TestCase):
         self.assertFalse((self.directory / "teardown.tfplan").exists())
 
 
+class FakeFlink:
+    def __init__(self, names, fail_delete=False):
+        self.names, self.fail_delete, self.deleted = list(names), fail_delete, []
+
+    def list_statements(self):
+        return [{"name": name} for name in self.names]
+
+    def delete_all_statements(self):
+        if self.fail_delete:
+            raise RuntimeError("MOCK_DELETE_FAILURE")
+        self.deleted, self.names = self.names, []
+        return len(self.deleted)
+
+
+class TeardownFlinkTests(PlanCleanupTests):
+    POOL = "confluent_flink_compute_pool.payment_fraud"
+
+    def run_teardown(self, flink, answer="DESTROY PIPELINE", fail_apply=False):
+        calls = []
+        changes = [resource(self.POOL, ["delete"])]
+        base = self.runner(changes, fail_apply=fail_apply, plan_name="teardown.tfplan")
+
+        def execute(command, **kwargs):
+            calls.append("apply" if "apply" in command else command[1])
+            return base(command, **kwargs)
+
+        with patch.object(lab, "run_command", side_effect=execute),              patch.object(lab, "teardown_flink_runtime", return_value=flink),              patch("builtins.input", return_value=answer):
+            lab.teardown(confirm=True)
+        return calls
+
+    def test_statements_deleted_after_approval_and_before_destroy(self):
+        flink = FakeFlink(["etapa11-fraud-pattern-matches", "cli-query-1"])
+        calls = self.run_teardown(flink)
+        self.assertEqual(flink.deleted, ["etapa11-fraud-pattern-matches", "cli-query-1"])
+        self.assertEqual(calls[-1], "apply")
+
+    def test_cancel_keeps_statements(self):
+        flink = FakeFlink(["s1"])
+        calls = self.run_teardown(flink, answer="nao")
+        self.assertEqual(flink.deleted, [])
+        self.assertNotIn("apply", calls)
+
+    def test_statement_delete_failure_blocks_destroy(self):
+        with self.assertRaisesRegex(RuntimeError, "FLINK_STATEMENT_DELETE_FAILED"):
+            calls = self.run_teardown(FakeFlink(["s1"], fail_delete=True))
+        self.assertFalse((self.directory / "teardown.tfplan").exists())
+
+    def test_runtime_only_when_pool_is_destroyed(self):
+        self.assertIsNone(lab.teardown_flink_runtime([{"address": "confluent_service_account.cdc"}]))
+
+
 if __name__ == "__main__":
     unittest.main()
