@@ -62,8 +62,10 @@ PowerShell 5.1, rode os comandos de cada bloco um por vez.
   seguintes não rodaram**. Não siga: veja o "Se falhar" do bloco.
 
 Os comandos do `lab.py` também terminam com `RESULTADO: OK`,
-`RESULTADO: FALHOU` ou `RESULTADO: CANCELADO` (você não digitou a confirmação;
-nada foi alterado). Cole um bloco por vez.
+`RESULTADO: FALHOU` ou `RESULTADO: CANCELADO`. Nas confirmações (`APPLY
+FOUNDATION`, `APPLY PIPELINE`, `APPLY FLINK`, `DESTROY PIPELINE`) você tem 3
+tentativas; a frase precisa ser exata (maiúsculas, um espaço). Depois da
+terceira, a operação é cancelada sem alterar nada. Cole um bloco por vez.
 
 | Ação | bash / PowerShell 7 | Windows PowerShell 5.1 |
 |---|---|---|

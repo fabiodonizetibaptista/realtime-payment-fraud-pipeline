@@ -251,11 +251,7 @@ def apply_foundation(confirm: bool = False) -> None:
 
     print("DESTRUCTIONS=0")
     print("UPDATES=0")
-    approval = input(
-        "Digite APPLY FOUNDATION para provisionar os recursos: "
-    )
-
-    if approval != "APPLY FOUNDATION":
+    if not confirm_phrase("APPLY FOUNDATION", "provisionar os recursos"):
         print("FOUNDATION_APPLY_CANCELLED=True")
         return CANCELLED
 
@@ -447,9 +443,7 @@ def apply_pipeline(confirm: bool = False, allow_cdc: bool = False) -> None:
     for item in resources:
         print(f"{item['action'].upper()} {item['address']}")
 
-    approval = input("Digite APPLY PIPELINE para autorizar: ")
-
-    if approval != "APPLY PIPELINE":
+    if not confirm_phrase("APPLY PIPELINE", "autorizar"):
         print("PIPELINE_APPLY_CANCELLED=True")
         return CANCELLED
 
@@ -562,9 +556,7 @@ def teardown(confirm: bool = False) -> None:
     print("WARNING=ALL_RESOURCES_IN_CURRENT_TERRAFORM_STATE")
     print("WARNING=DESTRUCTION_MAY_BE_IRREVERSIBLE")
 
-    approval = input("Digite DESTROY PIPELINE para confirmar: ")
-
-    if approval != "DESTROY PIPELINE":
+    if not confirm_phrase("DESTROY PIPELINE", "confirmar"):
         plan_path.unlink(missing_ok=True)
         print("TEARDOWN_CANCELLED=True")
         return CANCELLED
@@ -638,8 +630,7 @@ def setup_flink(apply: bool = False) -> None:
         print("REMOTE_DDL_EXECUTED=False")
         return
 
-    approval = input("Digite APPLY FLINK para autorizar os DDLs: ")
-    if approval != "APPLY FLINK":
+    if not confirm_phrase("APPLY FLINK", "autorizar os DDLs"):
         print("FLINK_APPLY_CANCELLED=True")
         return CANCELLED
 
@@ -652,6 +643,26 @@ def setup_flink(apply: bool = False) -> None:
 
 
 CANCELLED = "CANCELLED"
+CONFIRM_ATTEMPTS = 3
+
+
+def confirm_phrase(expected: str, purpose: str, attempts: int = CONFIRM_ATTEMPTS) -> bool:
+    """Pede a frase exata ate `attempts` vezes; so espacos nas pontas sao ignorados.
+
+    Um erro de digitacao nao deve obrigar a repetir o bloco inteiro, mas a
+    comparacao continua exata (nenhuma frase "parecida" autoriza).
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            answer = input(f"Digite {expected} para {purpose}: ")
+        except EOFError:
+            return False
+        if answer.strip() == expected:
+            return True
+        if attempt < attempts:
+            print(f"Texto nao confere. Digite exatamente {expected} "
+                  f"(tentativa {attempt + 1} de {attempts}).")
+    return False
 
 
 def main(argv: Sequence[str] | None = None) -> int:
