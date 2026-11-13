@@ -7,7 +7,7 @@
 - **Comprovado em nuvem:** evidência de execução real vinculada a ambiente e janela verificáveis.
 - **Não comprovado:** pendência explícita; não assumir êxito pela existência do script.
 
-Execução de referência: **run-20261111** (2026-11-12, do zero, em conta vazia).
+Execução de referência: **run-20261111** (2026-11-12, do zero, em conta vazia), reproduzida seguindo apenas a documentação em **run-20261112** (Codespace limpo) com os mesmos resultados.
 Evidências em [`evidencias/runs/run-20261111/`](../evidencias/runs/run-20261111/).
 
 | Requisito | Implementação | Verificação | Situação |

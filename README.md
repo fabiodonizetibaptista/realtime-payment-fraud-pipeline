@@ -24,8 +24,10 @@ flowchart LR
 ```
 
 As evidências abaixo são saídas reais da execução **run-20261111**
-(2026-11-12, do zero, em conta vazia). Arquivos completos e sanitizados em
-[`evidencias/runs/run-20261111/`](evidencias/runs/run-20261111/).
+(2026-11-12, do zero, em conta vazia). O pipeline foi depois **reproduzido
+seguindo apenas a documentação**, num Codespace limpo (**run-20261112**), com
+os mesmos resultados. Arquivos sanitizados em
+[`evidencias/runs/`](evidencias/runs/).
 
 ---
 
@@ -251,8 +253,13 @@ Confluent Cloud (Cloud API key com permissão de organização) e créditos para
 | Gate | Situação |
 |---|---|
 | Execução de ponta a ponta do zero (run-20261111) | **Feita.** Revelou 11 defeitos, todos corrigidos e cobertos por testes. |
-| Reprodução guiada só por esta documentação, em Codespace limpo | **Pendente** — próxima execução. |
+| Reprodução seguindo só esta documentação, em Codespace limpo (run-20261112) | **Feita**, pelo mesmo operador e sem orientação fora do roteiro. Cada ponto em que o texto não bastou virou um desvio documentado e corrigido (D1–D12 em [reproduction-readiness-backlog.md](docs/audits/reproduction-readiness-backlog.md)). Resultados iguais aos da primeira: ciclo CDC c/u/d/tombstone, BACKWARD, join sem perda (2002 linhas), alerta do cenário, `received_bytes` (pico de 538.907 B/min), teardown completo. |
 | Reprodução por outra pessoa/conta | Não executada. |
+
+Depois da execução guiada entraram apenas melhorias de operação — comando de
+custo do J7, 3 tentativas nas confirmações e `python lab.py status` para
+retomar após uma queda —, cobertas por testes, mas ainda não exercitadas numa
+nova janela na nuvem.
 
 Limitações conhecidas: lag do consumidor sem série (o cluster Basic não tem
 `lag summarize`, e a auditoria lê sem commit de offsets); `kafka cluster list`
