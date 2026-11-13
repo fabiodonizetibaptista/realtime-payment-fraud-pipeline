@@ -234,7 +234,8 @@ está em **[docs/runbook.md](docs/runbook.md)**. Resumo:
    Terraform e Confluent CLI. Em máquina própria, use Linux/macOS (shell) ou
    Windows (PowerShell) com Python 3.12+, Terraform 1.16+ e Confluent CLI 4.81+
    ([local-bootstrap.md](docs/local-bootstrap.md)).
-2. **Credenciais** — copie `.env.example` para `.env` e preencha só
+2. **Credenciais** — `python -m scripts.bootstrap_local init-env` cria o `.env`
+   a partir do `.env.example` (copie, não renomeie o modelo) e preencha só
    `AIVEN_TOKEN`, `CONFLUENT_CLOUD_API_KEY`, `CONFLUENT_CLOUD_API_SECRET` e
    `TF_VAR_aiven_project`. O resto é gerado pelos scripts.
 3. **Subir** — `lab.py setup` → fundação e pipeline (`lab.py plan/apply`,

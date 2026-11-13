@@ -99,7 +99,8 @@ Contas criadas com login do Google (ou outro SSO) funcionam normalmente.
 
    Copie `API Key` e `API Secret` para o `.env` (passo 4) e depois rode
    `clear` para tirar o segredo da tela. O segredo só aparece nesse momento.
-4. **`.env`:** `cp .env.example .env` e preencha **só** `AIVEN_TOKEN`,
+4. **`.env`:** crie com `python -m scripts.bootstrap_local init-env` (copia o
+   `.env.example`; **não renomeie** o modelo, ele é usado no J0.1) e preencha **só** `AIVEN_TOKEN`,
    `TF_VAR_aiven_project`, `CONFLUENT_CLOUD_API_KEY` e
    `CONFLUENT_CLOUD_API_SECRET` (sem aspas nem espaços). Todo o resto é gerado
    pelos scripts — **não preencha senhas do CDC**.
@@ -155,6 +156,8 @@ echo ">>> J0.1 OK - siga para J0.2" || echo ">>> J0.1 FALHOU - pare e leia o err
 ```
 
 **Se falhar:** `MISSING_KEYS=...` → preencha essas variáveis no `.env` e repita.
+`ENV_TEMPLATE_MISSING` → o `.env.example` foi renomeado em vez de copiado:
+`git restore .env.example` (o seu `.env` não muda) e repita.
 Menos de 270 testes ou `scripts.check_configuration` inexistente → branch
 antiga: volte ao passo de Ambiente.
 

@@ -22,6 +22,7 @@ from safety import (
 ROOT = Path(__file__).resolve().parent
 TF_DIR = ROOT / "infra" / "terraform"
 ENV_FILE = ROOT / ".env"
+ENV_TEMPLATE = ROOT / ".env.example"
 MIN_TERRAFORM_VERSION = (1, 16, 0)
 MIN_CONFLUENT_VERSION = (4, 81, 0)
 
@@ -98,8 +99,22 @@ def _check_versions() -> None:
     _check_minimum_version("Confluent CLI", cli, MIN_CONFLUENT_VERSION)
 
 
+def require_env_template(template: Path | None = None) -> None:
+    """O modelo e versionado: renomea-lo para .env quebra setup e testes."""
+    template = template or ENV_TEMPLATE
+    if not template.is_file():
+        raise RuntimeError(
+            "ENV_TEMPLATE_MISSING: o arquivo .env.example sumiu (provavelmente foi "
+            "renomeado para .env em vez de copiado). Ele faz parte do repositorio. "
+            "Restaure com: git restore .env.example (sem Git: baixe de novo do "
+            "GitHub). Seu .env nao e alterado. Daqui em diante, crie o .env com: "
+            "python -m scripts.bootstrap_local init-env"
+        )
+
+
 def setup() -> None:
     """Marco 1: prepara somente o ambiente local; nao executa plan/apply."""
+    require_env_template()
     # Codespaces Secrets ja chegam no ambiente. O .env e opcional e nunca
     # pode apagar ou substituir valores definidos pelo ambiente de execucao.
     execution_env = dict(os.environ)
@@ -774,6 +789,7 @@ def _dispatch(argv: Sequence[str] | None = None) -> int:
             check_cli_help()
             print(f"CONFLUENT_CLI_HELP_OK={len(CLI_HELP_COMMANDS)}")
         elif args.command == "test":
+            require_env_template()
             import unittest
             result = unittest.TextTestRunner(verbosity=2).run(
                 unittest.defaultTestLoader.discover(str(ROOT / "tests"))
