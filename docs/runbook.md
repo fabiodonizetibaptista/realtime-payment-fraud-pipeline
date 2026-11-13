@@ -33,7 +33,8 @@ Cada passo traz o critério de **PASS** e o que fazer se falhar.
    Se algum faltar, a instalação automática falhou: rode
    `python .devcontainer/install_tools.py` e confira de novo.
 4. Confira a branch e o código: `git branch --show-current` deve mostrar a
-   branch escolhida, e não deve existir pasta `.venv`.
+   branch escolhida, e não deve existir pasta `.venv`. Voltando a um Codespace
+   já criado, o J0.1 começa com `git pull` para não rodar código antigo.
 
 O devcontainer também funciona localmente no VS Code com Docker Desktop
 (**Dev Containers: Reopen in Container**), com os mesmos passos 2 e 3.
@@ -149,6 +150,7 @@ ao J6** para parar a cobrança; as evidências já gravadas ficam preservadas.
 **J0.1 — Código e `.env`**
 
 ```bash
+git pull --ff-only &&                     # código mais recente da branch (Codespace/clone antigo)
 python lab.py setup &&                    # terraform init + validate + CLIs
 python lab.py test &&                     # testes locais (mais de 270)
 python -m scripts.check_configuration foundation &&
@@ -158,6 +160,9 @@ echo ">>> J0.1 OK - siga para J0.2" || echo ">>> J0.1 FALHOU - pare e leia o err
 **Se falhar:** `MISSING_KEYS=...` → preencha essas variáveis no `.env` e repita.
 `ENV_TEMPLATE_MISSING` → o `.env.example` foi renomeado em vez de copiado:
 `git restore .env.example` (o seu `.env` não muda) e repita.
+`git pull` recusado (`Not possible to fast-forward` ou alterações locais) →
+você editou arquivos versionados: `git status` mostra quais; `git stash` e
+repita. Sem Git (cópia em `.zip`): baixe a versão atual do GitHub.
 Menos de 270 testes ou `scripts.check_configuration` inexistente → branch
 antiga: volte ao passo de Ambiente.
 
