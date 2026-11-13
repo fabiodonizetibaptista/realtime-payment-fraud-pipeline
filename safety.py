@@ -184,6 +184,19 @@ def run_with_teardown(work, teardown):
 EVIDENCE_RUN_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 
 
+RUN_ID_FILE = Path(".local") / "evidence_run_id"
+
+
+def saved_run_id(root: Path) -> str:
+    """EVIDENCE_RUN_ID gravado no J0.2, ou vazio."""
+    path = root / RUN_ID_FILE
+    try:
+        value = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+    return value if EVIDENCE_RUN_ID_PATTERN.fullmatch(value) else ""
+
+
 def evidence_path(root: Path, relative: str, environment: Mapping[str, str] | None = None) -> Path:
     """Resolve o destino de uma evidencia, isolando cada execucao.
 
@@ -195,6 +208,10 @@ def evidence_path(root: Path, relative: str, environment: Mapping[str, str] | No
 
     source = os.environ if environment is None else environment
     run_id = source.get("EVIDENCE_RUN_ID", "").strip()
+    if not run_id and environment is None:
+        # Terminal perdido (queda, Codespace reiniciado): o J0.2 grava o id
+        # em .local/evidence_run_id para as evidencias nao mudarem de pasta.
+        run_id = saved_run_id(root)
     relative_path = Path(relative)
     if relative_path.is_absolute() or ".." in relative_path.parts:
         raise ValueError("EVIDENCE_PATH_INVALID")

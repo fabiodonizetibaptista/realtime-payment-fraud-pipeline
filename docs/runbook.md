@@ -119,6 +119,30 @@ Opcional: cloud/região/nomes da Confluent são variáveis Terraform
 
 ---
 
+## Caiu? Comece por aqui
+
+Queda de internet, Codespace reiniciado, terminal fechado ou computador
+travado: **os recursos na nuvem continuam existindo e cobrando**, mesmo com o
+Codespace parado (ele também para sozinho após ~30 min sem uso). Os arquivos
+do Codespace são preservados. Para retomar:
+
+```bash
+python lab.py status
+```
+
+O comando só lê e mostra:
+
+- quais blocos já foram concluídos e o `PROXIMO_BLOCO` — deduzidos do que
+  existe de fato (State do Terraform, `.env` gerado, evidências gravadas);
+- `COBRANDO_AGORA`: conector ativo, statements Flink rodando, cluster Kafka;
+- `RESTAURAR_SESSAO`: as linhas `export` para recriar `EVIDENCE_RUN_ID`,
+  `ENV_ID`, `KAFKA_ID` e `WINDOW_START` — cole-as no terminal novo;
+- alertas como State travado por uma operação interrompida.
+
+Depois, siga do bloco indicado. Repetir um bloco é sempre seguro (ver
+"Se um bloco falhar" no J1). **Se não for continuar agora, vá direto ao J5 e
+ao J6** para parar a cobrança; as evidências já gravadas ficam preservadas.
+
 ## J0 — Verificação (sem custo; repetir é seguro)
 
 **J0.1 — Código e `.env`**
@@ -141,6 +165,7 @@ python scripts/check_cloud_credentials.py &&   # as chaves do .env funcionam
 python scripts/check_clean_slate.py &&         # nada de tentativas anteriores na nuvem
 confluent billing promo list &&                # créditos (e confirma o login da CLI)
 export EVIDENCE_RUN_ID=run-$(date -u +%Y%m%d) &&
+mkdir -p .local && echo "$EVIDENCE_RUN_ID" > .local/evidence_run_id &&   # sobrevive a quedas
 echo ">>> J0.2 OK - siga para J1.1" || echo ">>> J0.2 FALHOU - pare e leia o erro acima"
 ```
 
@@ -369,6 +394,7 @@ como parcial.
 | Situação | O que fazer |
 |---|---|
 | Um bloco falhou | Corrija a causa e repita o bloco inteiro: planos antigos são descartados, arquivos de tentativas anteriores arquivados e applies parciais completados só com o que falta. |
+| Perdi o terminal / caiu a conexão | `python lab.py status` e siga o `PROXIMO_BLOCO` (seção "Caiu? Comece por aqui"). |
 | `CONFLICT ...` no J0.2 | Restos fora do State; rode o `NEXT_ACTION` de cada linha e repita o J0.2. |
 | Plano propõe update/destroy inesperado | Não aplique. Confira `terraform -chdir=infra/terraform state list`; o gate bloqueia sozinho. |
 | `lab.py teardown` falhou no meio | **Não repita.** `python scripts/reconcile_state.py plan` mostra o que mudou na nuvem; revise e rode `python scripts/reconcile_state.py apply --confirm`; depois um novo `lab.py teardown`. |

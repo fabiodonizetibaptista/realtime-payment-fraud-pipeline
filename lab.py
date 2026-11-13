@@ -739,6 +739,10 @@ def _dispatch(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="habilita o plano de destruicao e a confirmacao interativa",
     )
+    commands.add_parser(
+        "status",
+        help="onde estou e como retomar: blocos concluidos, cobrancas ativas, restaurar sessao (somente leitura)",
+    )
     commands.add_parser("check-cli", help="valida localmente os comandos Confluent CLI")
     commands.add_parser("test", help="executa os testes sem credenciais")
     args = parser.parse_args(argv)
@@ -763,6 +767,9 @@ def _dispatch(argv: Sequence[str] | None = None) -> int:
             outcome = setup_flink(apply=args.apply)
         elif args.command == "teardown":
             outcome = teardown(confirm=args.confirm_destroy)
+        elif args.command == "status":
+            from scripts.run_status import main as status_main
+            status_main(FOUNDATION_APPLY_RESOURCES)
         elif args.command == "check-cli":
             check_cli_help()
             print(f"CONFLUENT_CLI_HELP_OK={len(CLI_HELP_COMMANDS)}")
