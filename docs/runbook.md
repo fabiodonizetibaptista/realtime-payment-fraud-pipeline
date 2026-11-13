@@ -336,13 +336,29 @@ rm -rf .local infra/terraform/terraform.tfstate* infra/terraform/.terraform
 
 e remova do `.env` tudo exceto as quatro credenciais de conta.
 
-## J7 — Custo (48–72 h depois)
+## J7 — Custo
+
+O custo aparece em dois lugares, com prazos diferentes:
+
+- **No dia seguinte — fatura do console:** Billing → **Invoices** → mês atual
+  → **Download CSV**. Traz uma linha por recurso (conector, Flink, Kafka) com
+  quantidade, preço e total, já com o crédito promocional. Foi a fonte usada
+  nas execuções registradas.
+- **Pela CLI — dias fechados:** a API de custos só devolve dias já apurados;
+  no mesmo dia da janela ela costuma vir vazia. Para consultar do dia da
+  janela até hoje:
 
 ```bash
-confluent billing cost list --start-date AAAA-MM-DD --end-date AAAA-MM-DD   # fim exclusivo
+START=$(python -c "import datetime as d; print(d.date.today() - d.timedelta(1))") &&
+END=$(python -c "import datetime as d; print(d.date.today() + d.timedelta(1))") &&
+confluent billing cost list --start-date $START --end-date $END &&
+echo ">>> J7 OK" || echo ">>> J7 FALHOU - pare e leia o erro acima"
 ```
 
-Enquanto não aparecerem linhas de todos os dias da janela, o custo é parcial.
+Ajuste `START` para o dia da sua janela, se ela foi há mais de um dia (formato
+`2026-11-12`; o `--end-date` é exclusivo). Registre o valor, a fonte e a data
+da consulta. Enquanto nem todos os dias da janela aparecerem, declare o custo
+como parcial.
 
 ---
 

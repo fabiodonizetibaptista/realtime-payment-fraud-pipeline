@@ -12,7 +12,7 @@ Coletado por `collect_operations_evidence.py` (escopo explícito) e
 | Compute pool | `payment-fraud-v2`, PROVISIONED, `max_cfu=10` |
 | Identidades | 7 do projeto (+1 da conta, fora do escopo); 14 ACLs — CREATE 2, DESCRIBE 2, DESCRIBE_CONFIGS 1, READ 5, WRITE 4 |
 | Metrics API | `received_bytes`: 43 pontos/min, pico 180.626 B/min, total 233.839 B; lag por grupo sem série |
-| Billing | Sem linhas no dia da janela no momento da coleta → **pendente** (reconsultar após 48–72 h) |
+| Billing | Vazio na CLI no dia da janela; **final pela fatura do console (2026-11-13): US$ 1,317** — conector 1,000, Flink 0,182, Kafka 0,135 — coberto pelo crédito `FREETRIAL400` |
 | Teardown | State vazio; sem environment, service accounts ou conector do projeto |
 
 O conteúdo abaixo é a inspeção **anterior** (09/11/2026), mantida como histórico.

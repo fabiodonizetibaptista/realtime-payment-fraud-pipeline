@@ -20,7 +20,7 @@ Evidências em [`evidencias/runs/run-20261111/`](../evidencias/runs/run-20261111
 | Regra 3/60 s | `sql/fraud_detection/` | Cenário positivo gera 1 alerta; legítimo não | **Comprovado em nuvem** (bordas só locais) — [fraud-pattern.md](validation/fraud-pattern.md) |
 | Alerta contínuo | `fraud_stream.py` | Statement RUNNING e alerta rastreável aos 3 IDs | **Comprovado em nuvem** — [fraud-stream.md](validation/fraud-stream.md) |
 | Observabilidade | `collect_metrics_evidence.py` | Série `received_bytes` da Metrics API | **Comprovado** (bytes); lag por grupo sem série — limitação documentada |
-| Custos | `collect_operations_evidence.py` | `billing cost list` do período | **Pendente** — billing publicado com atraso |
+| Custos | Fatura do console + `billing cost list` | Custo por recurso e por execução | **Comprovado** — US$ 1,317 (run-20261111) e US$ 1,289 (run-20261112), cobertos pelo crédito; [billing-final.json](../evidencias/runs/run-20261111/operations/billing-final.json) |
 | Teardown | `lab.py teardown` | Listas vazias e State vazio | **Comprovado**, após correção da ordem de destruição — [teardown/](../evidencias/runs/run-20261111/teardown/closure-and-teardown.md) |
 
 ## Testes e revisão de segurança
@@ -33,4 +33,4 @@ Antes de publicar, conferir que artefatos de evidência não contêm credenciais
 
 Critério: na mesma janela controlada, provisionamento confirmado, origem PostgreSQL válida, CDC entregando eventos Kafka, contratos aceitos, statement Flink executando, correspondência no destino ligada aos três eventos sintéticos e encerramento/custos registrados.
 
-A run-20261111 atendeu a todos os itens, exceto o custo final (pendente de publicação no billing). Ela foi conduzida com correções durante a execução; a reprodução guiada **apenas** pela documentação é o gate seguinte ([backlog](audits/reproduction-readiness-backlog.md)).
+A run-20261111 atendeu a todos os itens; o custo final veio da fatura do console no dia seguinte. Ela foi conduzida com correções durante a execução; a reprodução guiada **apenas** pela documentação é o gate seguinte ([backlog](audits/reproduction-readiness-backlog.md)).

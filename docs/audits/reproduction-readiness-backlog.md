@@ -12,7 +12,7 @@
 | Gate | Critério | Situação |
 |---|---|---|
 | **G-ENV** | Clone limpo no devcontainer: `lab.py setup`, `test`, `check_configuration foundation` | **Pendente** — validado em Windows (PowerShell); devcontainer será exercitado no Codespace da próxima execução |
-| **G-DIO** | Execução J0–J6 com evidência real; README no modelo DIO; sem segredos nem marcadores do modelo sem preencher; custo registrado | **Atendido**, exceto custo final (billing pendente) — run-20261111 |
+| **G-DIO** | Execução J0–J6 com evidência real; README no modelo DIO; sem segredos nem marcadores do modelo sem preencher; custo registrado | **Atendido** — run-20261111 e run-20261112; custo final US$ 1,32 por execução, coberto pelo crédito |
 | **G-REPRO** | Alguém sobe J0–J6 seguindo **só** a documentação | **Não executado.** Próximo passo: o mesmo operador, em Codespace limpo, sem orientação além de [runbook.md](../runbook.md) (registrado como "mesmo operador"); reprodução por outra pessoa/conta continua não executada |
 
 Lacunas L1–L8 abaixo: L1 (README reescrito em UTF-8), L3, L4 e L5 (comandos

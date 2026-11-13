@@ -158,7 +158,7 @@ guarda só booleanos (os IDs não são persistidos).
 |---|---|
 | ① **Observabilidade** | Metrics API, `received_bytes` do cluster, 43 pontos de 1 min (01:57–02:39 UTC): **pico de 180.626 bytes/min** no snapshot, 233.839 bytes no total ([metrics-api-received-bytes.json](evidencias/runs/run-20261111/observability/metrics-api-received-bytes.json)). Lag por grupo: **sem série** — ver limitação abaixo. |
 | ② **Segurança** | Tabela da Camada 1 (identidade → ACL → por quê). No Postgres, `cdc_user` com `CDC_BUSINESS_WRITE_DENIED=True`. Nenhuma credencial versionada: `.env` e State ficam fora do Git, os scripts nunca imprimem segredos e as falhas do provider são classificadas sem gravar o texto original. |
-| ③ **Custos** | Billing da Confluent publicado com atraso: **custo final pendente** (consulta em 48–72 h). Alavancas: (1) o conector, a peça mais cara por hora, só existe durante a janela de prova (~1 h) e com `tasks.max=1`; (2) os statements Flink são apagados no fim da janela — o pool só cobra CFU com statement rodando, e `max_cfu=10` limita o teto. |
+| ③ **Custos** | **US$ 1,32 por execução completa** (fatura da Confluent, tabela abaixo), coberto pelo crédito de avaliação. O conector é **77 %** do custo. Alavancas: (1) o conector só existe durante a janela de prova, com `tasks.max=1` — cobrado por hora de task, então uma janela que caiba numa única hora cheia corta esse item pela metade; (2) os statements Flink são apagados no fim da janela — o pool só cobra CFU com statement rodando, e `max_cfu=10` limita o teto. |
 | ④ **Confiabilidade** | Tabela abaixo. Elo fraco: **consumidor → efeito**. |
 
 | Trecho | Garantia | Como foi verificado | Risco |
@@ -171,9 +171,24 @@ guarda só booleanos (os IDs não são persistidos).
 
 ### Custo total e teardown
 
-- **Custo declarado:** pendente de publicação no billing (consulta prevista a
-  partir de 2026-11-14). Créditos de avaliação disponíveis: US$ 400. Preço
-  observado do Kafka Basic: US$ 0,135/hora + US$ 0,05/GB lido e gravado.
+**Custo declarado** — fatura de novembro/2026 exportada do console da
+Confluent (Billing → Invoices → CSV), uma linha por recurso:
+
+| Item | Preço | run-20261111 | run-20261112 (guiada) |
+|---|---|---|---|
+| Conector CDC (`ConnectNumTasks`) | US$ 0,50 / task-hora | 2 task-h → US$ 1,000 | 2 task-h → US$ 1,000 |
+| Flink (`FlinkNumCFUs`) | US$ 0,21 / CFU-hora | 0,87 CFU-h → US$ 0,182 | 0,73 CFU-h → US$ 0,154 |
+| Kafka Basic (`KafkaNumCKUs`) | US$ 0,135 / CKU-hora | 1 CKU-h → US$ 0,135 | 1 CKU-h → US$ 0,135 |
+| **Total bruto** | | **US$ 1,317** | **US$ 1,289** |
+
+Total das duas execuções: **US$ 2,61**, integralmente coberto pelo crédito
+`FREETRIAL400` — **valor pago: US$ 0,00**. O Postgres usa o plano gratuito da
+Aiven. Teto definido antes da execução: US$ 5 e 2 h de janela. Evidência:
+[billing-final.json](evidencias/runs/run-20261111/operations/billing-final.json).
+O conector ficou ativo por cerca de uma hora em cada execução e foi cobrado
+por 2 task-horas — consistente com cobrança por hora iniciada, já que as duas
+janelas cruzaram a virada de hora (01:5x→02:55 e 17:59→18:1x UTC).
+
 - **Teardown executado ao final**, com listas vazias:
 
 ```text

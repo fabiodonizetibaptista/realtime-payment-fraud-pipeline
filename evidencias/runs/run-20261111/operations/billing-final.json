@@ -1,0 +1,30 @@
+{
+  "source": "Fatura parcial de novembro/2026 exportada do console da Confluent (Billing > Invoices > CSV), recebida em 2026-11-13",
+  "currency": "USD",
+  "period_in_invoice": "2026-11-10 a 2026-12-01 (mes corrente, valores ja apurados)",
+  "environment_id": "env-qqm0qp",
+  "status": "FINAL (linhas da fatura)",
+  "items": {
+    "connect": {
+      "quantity": 2.0,
+      "unit": "Task-hour",
+      "unit_price": 0.5,
+      "amount": 1.0
+    },
+    "flink": {
+      "quantity": 0.866667,
+      "unit": "CFU-hour",
+      "unit_price": 0.21,
+      "amount": 0.182
+    },
+    "kafka": {
+      "quantity": 1.0,
+      "unit": "CKU-hour",
+      "unit_price": 0.135,
+      "amount": 0.135
+    }
+  },
+  "gross_total_usd": 1.317,
+  "credit": "FREETRIAL400 cobriu o total do mes (US$ 2,6066 para as duas execucoes)",
+  "net_paid_usd": 0.0
+}
