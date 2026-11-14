@@ -1,0 +1,18 @@
+{
+  "checked_at_utc": "2026-11-12T18:00:20.018497+00:00",
+  "topic": "payments.public.transactions",
+  "consumer_identity": "desafio-consumer",
+  "events_validated": [
+    "c",
+    "u",
+    "d",
+    "tombstone"
+  ],
+  "test_transaction_id": -1733771841273,
+  "synthetic_identifier": true,
+  "before_after_valid": true,
+  "delete_semantics_valid": true,
+  "tombstone_valid": true,
+  "payloads_recorded": false,
+  "gate": "PASS"
+}

@@ -1,0 +1,86 @@
+{
+  "expected_cdc_subjects": [
+    "payments.public.customers-key",
+    "payments.public.customers-value",
+    "payments.public.accounts-key",
+    "payments.public.accounts-value",
+    "payments.public.cards-key",
+    "payments.public.cards-value",
+    "payments.public.merchants-key",
+    "payments.public.merchants-value",
+    "payments.public.transactions-key",
+    "payments.public.transactions-value",
+    "payments.cdc_internal.heartbeat-key",
+    "payments.cdc_internal.heartbeat-value"
+  ],
+  "found_cdc_subjects": [
+    "payments.cdc_internal.heartbeat-key",
+    "payments.cdc_internal.heartbeat-value",
+    "payments.public.accounts-key",
+    "payments.public.accounts-value",
+    "payments.public.cards-key",
+    "payments.public.cards-value",
+    "payments.public.customers-key",
+    "payments.public.customers-value",
+    "payments.public.merchants-key",
+    "payments.public.merchants-value",
+    "payments.public.transactions-key",
+    "payments.public.transactions-value"
+  ],
+  "missing_cdc_subjects": [],
+  "alert_subjects": [],
+  "schema_metadata": {
+    "payments.cdc_internal.heartbeat-key": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.cdc_internal.heartbeat-value": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.accounts-key": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.accounts-value": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.cards-key": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.cards-value": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.customers-key": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.customers-value": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.merchants-key": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.merchants-value": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.transactions-key": {
+      "version": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.transactions-value": {
+      "version": 1,
+      "schema_type": "AVRO"
+    }
+  },
+  "global_compatibility": "BACKWARD",
+  "test_subject": "payments.public.transactions-value",
+  "test_subject_compatibility": "BACKWARD",
+  "terraform_managed_schema_count": 0
+}

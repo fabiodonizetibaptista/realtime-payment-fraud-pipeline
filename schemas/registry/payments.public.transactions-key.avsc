@@ -1,0 +1,1 @@
+{"type":"record","name":"Key","namespace":"payments.public.transactions","fields":[{"name":"transaction_id","type":"long"}],"connect.name":"payments.public.transactions.Key"}

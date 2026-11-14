@@ -1,0 +1,41 @@
+{
+  "evidence_type": "RETROSPECTIVE_CORRELATION",
+  "generated_at_utc": "2026-11-04T01:21:59.678581+00:00",
+  "source_files": [
+    ".local/stage5-scenario.json",
+    "evidencias/cdc/stage5-cdc-lifecycle.json"
+  ],
+  "topic": "payments.public.transactions",
+  "test_transaction_id": -1606205530698,
+  "synthetic_identifier": true,
+  "events": [
+    {
+      "operation": "c",
+      "test_transaction_id": -1606205530698,
+      "validated": true
+    },
+    {
+      "operation": "u",
+      "test_transaction_id": -1606205530698,
+      "validated": true
+    },
+    {
+      "operation": "d",
+      "test_transaction_id": -1606205530698,
+      "validated": true
+    },
+    {
+      "operation": "tombstone",
+      "test_transaction_id": -1606205530698,
+      "validated": true
+    }
+  ],
+  "before_after_valid": true,
+  "delete_semantics_valid": true,
+  "tombstone_valid": true,
+  "source_test_record_deleted": true,
+  "personal_data_recorded": false,
+  "credentials_recorded": false,
+  "gate": "PASS",
+  "provenance_note": "Correlacao retrospectiva de dois arquivos gerados na mesma janela. A validacao original identificou os eventos pelo transaction_id sintetico; este arquivo nao e um log bruto capturado durante o consumo."
+}

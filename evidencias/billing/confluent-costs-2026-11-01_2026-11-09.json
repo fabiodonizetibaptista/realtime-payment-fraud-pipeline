@@ -1,0 +1,183 @@
+[
+  {
+    "start_date": "2026-11-01",
+    "end_date": "2026-11-02",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$0.00",
+    "amount": "$0.00"
+  },
+  {
+    "start_date": "2026-11-02",
+    "end_date": "2026-11-03",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$0.00",
+    "amount": "$0.00"
+  },
+  {
+    "start_date": "2026-11-03",
+    "end_date": "2026-11-04",
+    "granularity": "DAILY",
+    "line_type": "CONNECT_NUM_TASKS",
+    "product": "CONNECT",
+    "resource": "lcc-k8wmyyp",
+    "resource_name": "payments-cdc-aiven",
+    "environment": "env-n17v3z",
+    "network_access_type": "PUBLIC",
+    "price": "$0.50 USD/Task-hour",
+    "original_amount": "$0.50",
+    "discount_amount": "$0.00",
+    "amount": "$0.50"
+  },
+  {
+    "start_date": "2026-11-03",
+    "end_date": "2026-11-04",
+    "granularity": "DAILY",
+    "line_type": "FLINK_NUM_CFUS",
+    "product": "FLINK",
+    "resource": "lfcp-9k36nv0",
+    "resource_name": "AWS.us-east-1.env-y5p78j.e76b",
+    "environment": "env-y5p78j",
+    "price": "$0.21 USD/CFU-hour",
+    "original_amount": "$0.049",
+    "discount_amount": "$0.00",
+    "amount": "$0.049"
+  },
+  {
+    "start_date": "2026-11-03",
+    "end_date": "2026-11-04",
+    "granularity": "DAILY",
+    "line_type": "KAFKA_NETWORK_READ",
+    "product": "KAFKA",
+    "resource": "lkc-v75g02j",
+    "resource_name": "payment-fraud-lab",
+    "environment": "env-y5p78j",
+    "network_access_type": "INTERNET",
+    "price": "$0.05 USD/GB",
+    "original_amount": "$0.0002",
+    "discount_amount": "$0.00",
+    "amount": "$0.0002"
+  },
+  {
+    "start_date": "2026-11-03",
+    "end_date": "2026-11-04",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$-0.5492",
+    "amount": "$-0.5492"
+  },
+  {
+    "start_date": "2026-11-04",
+    "end_date": "2026-11-05",
+    "granularity": "DAILY",
+    "line_type": "CONNECT_NUM_TASKS",
+    "product": "CONNECT",
+    "resource": "lcc-dozjr1d",
+    "resource_name": "payments-cdc-aiven",
+    "environment": "env-n17v3z",
+    "network_access_type": "PUBLIC",
+    "price": "$0.50 USD/Task-hour",
+    "original_amount": "$0.50",
+    "discount_amount": "$0.00",
+    "amount": "$0.50"
+  },
+  {
+    "start_date": "2026-11-04",
+    "end_date": "2026-11-05",
+    "granularity": "DAILY",
+    "line_type": "FLINK_NUM_CFUS",
+    "product": "FLINK",
+    "resource": "lfcp-gq50o2n",
+    "resource_name": "payment-fraud-v2",
+    "environment": "env-n17v3z",
+    "price": "$0.21 USD/CFU-hour",
+    "original_amount": "$0.0035",
+    "discount_amount": "$0.00",
+    "amount": "$0.0035"
+  },
+  {
+    "start_date": "2026-11-04",
+    "end_date": "2026-11-05",
+    "granularity": "DAILY",
+    "line_type": "KAFKA_NETWORK_READ",
+    "product": "KAFKA",
+    "resource": "lkc-v7km1mp",
+    "resource_name": "desafio-basic",
+    "environment": "env-n17v3z",
+    "network_access_type": "INTERNET",
+    "price": "$0.05 USD/GB",
+    "original_amount": "$0.0002",
+    "discount_amount": "$0.00",
+    "amount": "$0.0002"
+  },
+  {
+    "start_date": "2026-11-04",
+    "end_date": "2026-11-05",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$-0.5037",
+    "amount": "$-0.5037"
+  },
+  {
+    "start_date": "2026-11-05",
+    "end_date": "2026-11-06",
+    "granularity": "DAILY",
+    "line_type": "FLINK_NUM_CFUS",
+    "product": "FLINK",
+    "resource": "lfcp-gq50o2n",
+    "resource_name": "payment-fraud-v2",
+    "environment": "env-n17v3z",
+    "price": "$0.21 USD/CFU-hour",
+    "original_amount": "$0.1295",
+    "discount_amount": "$0.00",
+    "amount": "$0.1295"
+  },
+  {
+    "start_date": "2026-11-05",
+    "end_date": "2026-11-06",
+    "granularity": "DAILY",
+    "line_type": "KAFKA_NETWORK_READ",
+    "product": "KAFKA",
+    "resource": "lkc-v7km1mp",
+    "resource_name": "desafio-basic",
+    "environment": "env-n17v3z",
+    "network_access_type": "INTERNET",
+    "price": "$0.05 USD/GB",
+    "original_amount": "$0.0004",
+    "discount_amount": "$0.00",
+    "amount": "$0.0004"
+  },
+  {
+    "start_date": "2026-11-05",
+    "end_date": "2026-11-06",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$-0.13",
+    "amount": "$-0.13"
+  },
+  {
+    "start_date": "2026-11-06",
+    "end_date": "2026-11-07",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$0.00",
+    "amount": "$0.00"
+  },
+  {
+    "start_date": "2026-11-07",
+    "end_date": "2026-11-08",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$0.00",
+    "amount": "$0.00"
+  },
+  {
+    "start_date": "2026-11-08",
+    "end_date": "2026-11-09",
+    "granularity": "DAILY",
+    "line_type": "PROMO_CREDIT",
+    "original_amount": "$0.00",
+    "amount": "$0.00"
+  }
+]

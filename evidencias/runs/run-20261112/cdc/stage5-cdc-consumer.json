@@ -1,0 +1,40 @@
+{
+  "checked_at_utc": "2026-11-12T18:00:16.026198+00:00",
+  "consumer_identity": "desafio-consumer",
+  "read_only": true,
+  "topics": {
+    "payments.public.customers": {
+      "partitions": 1,
+      "available_offsets": 200,
+      "messages_sampled": 200
+    },
+    "payments.public.accounts": {
+      "partitions": 1,
+      "available_offsets": 240,
+      "messages_sampled": 240
+    },
+    "payments.public.cards": {
+      "partitions": 1,
+      "available_offsets": 320,
+      "messages_sampled": 320
+    },
+    "payments.public.merchants": {
+      "partitions": 1,
+      "available_offsets": 60,
+      "messages_sampled": 60
+    },
+    "payments.public.transactions": {
+      "partitions": 1,
+      "available_offsets": 2000,
+      "messages_sampled": 2000
+    },
+    "payments.cdc_internal.heartbeat": {
+      "partitions": 1,
+      "available_offsets": 1,
+      "messages_sampled": 1
+    }
+  },
+  "topics_available": 6,
+  "messages_sampled_total": 2821,
+  "gate": "PASS"
+}

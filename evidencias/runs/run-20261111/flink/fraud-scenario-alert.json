@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-11-12T02:49:43.030695+00:00",
+  "statement": "etapa11-fraud-pattern-matches",
+  "pattern": "3 transacoes do mesmo cartao em ate 60 s (MATCH_RECOGNIZE)",
+  "fraud_sequence_matched": true,
+  "fraud_matches_for_scenario": 1,
+  "legitimate_in_any_match": false,
+  "scenario_alert_gate": "PASS",
+  "transaction_ids_recorded": false
+}

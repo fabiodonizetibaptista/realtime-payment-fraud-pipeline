@@ -1,0 +1,68 @@
+{
+  "etapa": 9,
+  "gerado_em_utc": "2026-11-12T18:04:18.822770+00:00",
+  "sanitizacao": "Identificadores pseudonimizados com HMAC-SHA256 e chave efemera nao persistida. Valores e datas reais ocultados.",
+  "quantidade": 5,
+  "registros": [
+    {
+      "amostra": 1,
+      "transaction_id": "TX-c2983ff5da97",
+      "account_id": "AC-6378d8a3235d",
+      "amount": "PRESENTE",
+      "currency": "PRESENTE",
+      "transaction_status": "PRESENTE",
+      "event_time": "[OCULTO]",
+      "customer_id": "CL-6378d8a3235d",
+      "account_status": "PRESENTE",
+      "country_code": "PRESENTE"
+    },
+    {
+      "amostra": 2,
+      "transaction_id": "TX-5bb8e15e6ada",
+      "account_id": "AC-6378d8a3235d",
+      "amount": "PRESENTE",
+      "currency": "PRESENTE",
+      "transaction_status": "PRESENTE",
+      "event_time": "[OCULTO]",
+      "customer_id": "CL-6378d8a3235d",
+      "account_status": "PRESENTE",
+      "country_code": "PRESENTE"
+    },
+    {
+      "amostra": 3,
+      "transaction_id": "TX-e0e8f2c65e2b",
+      "account_id": "AC-6378d8a3235d",
+      "amount": "PRESENTE",
+      "currency": "PRESENTE",
+      "transaction_status": "PRESENTE",
+      "event_time": "[OCULTO]",
+      "customer_id": "CL-6378d8a3235d",
+      "account_status": "PRESENTE",
+      "country_code": "PRESENTE"
+    },
+    {
+      "amostra": 4,
+      "transaction_id": "TX-ee0556a4e780",
+      "account_id": "AC-6378d8a3235d",
+      "amount": "PRESENTE",
+      "currency": "PRESENTE",
+      "transaction_status": "PRESENTE",
+      "event_time": "[OCULTO]",
+      "customer_id": "CL-6378d8a3235d",
+      "account_status": "PRESENTE",
+      "country_code": "PRESENTE"
+    },
+    {
+      "amostra": 5,
+      "transaction_id": "TX-ef8a8a8dc9bf",
+      "account_id": "AC-6378d8a3235d",
+      "amount": "PRESENTE",
+      "currency": "PRESENTE",
+      "transaction_status": "PRESENTE",
+      "event_time": "[OCULTO]",
+      "customer_id": "CL-6378d8a3235d",
+      "account_status": "PRESENTE",
+      "country_code": "PRESENTE"
+    }
+  ]
+}

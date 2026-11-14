@@ -1,0 +1,66 @@
+{
+  "source": "Confluent Schema Registry — V2",
+  "subjects": {
+    "payments.public.customers-key": {
+      "file": "payments.public.customers-key.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.customers-value": {
+      "file": "payments.public.customers-value.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.accounts-key": {
+      "file": "payments.public.accounts-key.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.accounts-value": {
+      "file": "payments.public.accounts-value.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.cards-key": {
+      "file": "payments.public.cards-key.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.cards-value": {
+      "file": "payments.public.cards-value.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.merchants-key": {
+      "file": "payments.public.merchants-key.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.merchants-value": {
+      "file": "payments.public.merchants-value.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.transactions-key": {
+      "file": "payments.public.transactions-key.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.public.transactions-value": {
+      "file": "payments.public.transactions-value.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.cdc_internal.heartbeat-key": {
+      "file": "payments.cdc_internal.heartbeat-key.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    },
+    "payments.cdc_internal.heartbeat-value": {
+      "file": "payments.cdc_internal.heartbeat-value.avsc",
+      "version_at_export": 1,
+      "schema_type": "AVRO"
+    }
+  },
+  "remote_mutations": false
+}

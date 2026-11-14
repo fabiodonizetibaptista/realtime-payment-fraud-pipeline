@@ -1,0 +1,33 @@
+{
+  "evidence_type": "PROPOSED_SCHEMA_DIFF",
+  "generated_at_utc": "2026-11-12T18:00:51.517789+00:00",
+  "subject": "payments.public.transactions-value",
+  "base_version": 1,
+  "registered_new_version": false,
+  "changes": [
+    {
+      "scenario": "INCOMPATIBLE",
+      "operation": "ADD_FIELD",
+      "field": "stage6_required_field",
+      "type": "string",
+      "default_present": false,
+      "compatibility_result": "REJECTED"
+    },
+    {
+      "scenario": "COMPATIBLE",
+      "operation": "ADD_FIELD",
+      "field": "stage6_optional_field",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default_present": true,
+      "default": null,
+      "compatibility_result": "ACCEPTED"
+    }
+  ],
+  "existing_fields_changed": false,
+  "credentials_recorded": false,
+  "personal_data_recorded": false,
+  "gate": "PASS"
+}

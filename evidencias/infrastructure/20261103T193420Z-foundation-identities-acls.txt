@@ -1,0 +1,28 @@
+ETAPA=1
+BLOCO=4
+ITEM=4.2
+WINDOW_UTC=20261103T193420Z
+SOURCE=terraform_state
+
+[SERVICE_ACCOUNTS]
+desafio-cdc | ID=sa-9w30jom
+desafio-consumer | ID=sa-r2kq3gp
+desafio-iac-admin | ID=sa-j80kd2p
+desafio-producer | ID=sa-v15xo90
+desafio-schema-registry | ID=sa-xr5jg0g
+
+[KAFKA_ACLS]
+desafio-cdc | CLUSTER | kafka-cluster | LITERAL | DESCRIBE | ALLOW
+desafio-cdc | CLUSTER | kafka-cluster | LITERAL | DESCRIBE_CONFIGS | ALLOW
+desafio-cdc | TOPIC | __debezium-heartbeat- | PREFIXED | CREATE | ALLOW
+desafio-cdc | TOPIC | __debezium-heartbeat- | PREFIXED | DESCRIBE | ALLOW
+desafio-cdc | TOPIC | __debezium-heartbeat- | PREFIXED | WRITE | ALLOW
+desafio-cdc | TOPIC | payments | PREFIXED | CREATE | ALLOW
+desafio-cdc | TOPIC | payments | PREFIXED | WRITE | ALLOW
+desafio-consumer | GROUP | desafio- | PREFIXED | READ | ALLOW
+desafio-consumer | TOPIC | desafio- | PREFIXED | READ | ALLOW
+desafio-producer | TOPIC | desafio- | PREFIXED | WRITE | ALLOW
+
+SERVICE_ACCOUNT_COUNT=5
+KAFKA_ACL_COUNT=10
+EVIDENCE_STATUS=PASS

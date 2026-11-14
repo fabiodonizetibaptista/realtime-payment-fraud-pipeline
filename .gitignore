@@ -1,0 +1,35 @@
+# Credenciais locais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+crash.log
+crash.*.log
+
+# Saidas locais
+artifacts/
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Artefatos locais sensiveis (CA, manifests, diagnosticos, credenciais de metricas)
+.local/

@@ -1,0 +1,70 @@
+{
+  "captured_at_utc": "2026-11-12T18:14:01.235301+00:00",
+  "interval": "2026-11-12T17:55:00Z/2026-11-12T18:08:00Z",
+  "granularity": "PT1M",
+  "identity": "desafio-metrics (MetricsViewer)",
+  "received_bytes": {
+    "metric": "io.confluent.kafka.server/received_bytes",
+    "points": 12,
+    "total_bytes": 774194.0,
+    "peak_bytes_per_minute": 538907.0,
+    "series": [
+      {
+        "t": "2026-11-12T17:56:00Z",
+        "bytes": 538907.0
+      },
+      {
+        "t": "2026-11-12T17:57:00Z",
+        "bytes": 93.0
+      },
+      {
+        "t": "2026-11-12T17:58:00Z",
+        "bytes": 93.0
+      },
+      {
+        "t": "2026-11-12T17:59:00Z",
+        "bytes": 93.0
+      },
+      {
+        "t": "2026-11-12T18:00:00Z",
+        "bytes": 829.0
+      },
+      {
+        "t": "2026-11-12T18:01:00Z",
+        "bytes": 93.0
+      },
+      {
+        "t": "2026-11-12T18:02:00Z",
+        "bytes": 123365.0
+      },
+      {
+        "t": "2026-11-12T18:03:00Z",
+        "bytes": 61391.0
+      },
+      {
+        "t": "2026-11-12T18:04:00Z",
+        "bytes": 93.0
+      },
+      {
+        "t": "2026-11-12T18:05:00Z",
+        "bytes": 49051.0
+      },
+      {
+        "t": "2026-11-12T18:06:00Z",
+        "bytes": 93.0
+      },
+      {
+        "t": "2026-11-12T18:07:00Z",
+        "bytes": 93.0
+      }
+    ],
+    "status": "COM_DADOS"
+  },
+  "consumer_lag_offsets": {
+    "metric": "io.confluent.kafka.server/consumer_lag_offsets",
+    "points": 0,
+    "groups": {},
+    "status": "SEM_DADOS"
+  },
+  "credentials_recorded": false
+}

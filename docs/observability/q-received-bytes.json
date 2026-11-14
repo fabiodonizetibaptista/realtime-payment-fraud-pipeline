@@ -1,0 +1,7 @@
+{
+  "aggregations": [{ "metric": "io.confluent.kafka.server/received_bytes" }],
+  "filter": { "field": "resource.kafka.id", "op": "EQ", "value": "__KAFKA_ID__" },
+  "granularity": "PT1M",
+  "intervals": ["__START_UTC__/__END_UTC__"],
+  "limit": 1000
+}
