@@ -7,8 +7,13 @@ Cada passo traz o critério de **PASS** e o que fazer se falhar.
 - Tempo: ~1 h 30 min no total; a parte faturável (conector + Flink) leva ~1 h.
 - Custo: coberto pelos créditos de avaliação da Confluent; o Postgres da Aiven
   usa o plano gratuito. Defina um teto antes (recomendado: US$ 5 e 2 h de janela).
-- Nenhum comando imprime senhas ou chaves. **Nunca cole o conteúdo do `.env`,
-  do State (`*.tfstate`) ou de planos (`*.tfplan`) em issues, chats ou commits.**
+- Os comandos operacionais do roteiro (`lab.py` e `scripts/`, do J0 ao J7)
+  não imprimem senhas nem chaves. **Exceção:** a criação das credenciais em
+  "Contas e credenciais" — o token da Aiven e a Cloud API key da Confluent —
+  mostra o segredo **uma única vez**, na tela, para você copiar
+  (ver o alerta no passo 3).
+- **Nunca cole o conteúdo do `.env`, do State (`*.tfstate`) ou de planos
+  (`*.tfplan`) em issues, chats ou commits.**
 
 ## Ambiente — escolha **uma** opção
 
@@ -98,8 +103,15 @@ Contas criadas com login do Google (ou outro SSO) funcionam normalmente.
    confluent api-key create --resource cloud --description terraform-desafio
    ```
 
-   Copie `API Key` e `API Secret` para o `.env` (passo 4) e depois rode
-   `clear` para tirar o segredo da tela. O segredo só aparece nesse momento.
+   > ⚠️ **Este comando imprime o `API Secret` em texto claro.** É o único
+   > ponto do roteiro em que isso acontece (além do token exibido no console
+   > da Aiven no passo 1). Antes de rodar: não compartilhe a tela, não grave o
+   > terminal e não cole a saída em chats, issues ou logs.
+
+   Copie `API Key` e `API Secret` direto para o `.env` (passo 4) e depois rode
+   `clear` para tirar o segredo da tela. O segredo só aparece nesse momento. **Se ele vazou** (print,
+   gravação, chat): apague a chave com `confluent api-key delete <API Key>`,
+   crie outra e atualize o `.env`.
 4. **`.env`:** crie com `python -m scripts.bootstrap_local init-env` (copia o
    `.env.example`; **não renomeie** o modelo, ele é usado no J0.1) e preencha **só** `AIVEN_TOKEN`,
    `TF_VAR_aiven_project`, `CONFLUENT_CLOUD_API_KEY` e

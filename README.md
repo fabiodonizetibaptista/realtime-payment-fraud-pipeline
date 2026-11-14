@@ -159,7 +159,7 @@ guarda só booleanos (os IDs não são persistidos).
 | Pilar | Resposta (medida) |
 |---|---|
 | ① **Observabilidade** | Metrics API, `received_bytes` do cluster, 43 pontos de 1 min (01:57–02:39 UTC): **pico de 180.626 bytes/min** no snapshot, 233.839 bytes no total ([metrics-api-received-bytes.json](evidencias/runs/run-20261111/observability/metrics-api-received-bytes.json)). Lag por grupo: **sem série** — ver limitação abaixo. |
-| ② **Segurança** | Tabela da Camada 1 (identidade → ACL → por quê). No Postgres, `cdc_user` com `CDC_BUSINESS_WRITE_DENIED=True`. Nenhuma credencial versionada: `.env` e State ficam fora do Git, os scripts nunca imprimem segredos e as falhas do provider são classificadas sem gravar o texto original. |
+| ② **Segurança** | Tabela da Camada 1 (identidade → ACL → por quê). No Postgres, `cdc_user` com `CDC_BUSINESS_WRITE_DENIED=True`. Nenhuma credencial versionada: `.env` e State ficam fora do Git, os scripts do projeto nunca imprimem segredos (só a criação manual do token Aiven e da Cloud API key os exibe, uma vez, para cópia) e as falhas do provider são classificadas sem gravar o texto original. |
 | ③ **Custos** | **US$ 1,32 por execução completa** (fatura da Confluent, tabela abaixo), coberto pelo crédito de avaliação. O conector é **77 %** do custo. Alavancas: (1) o conector só existe durante a janela de prova, com `tasks.max=1` — cobrado por hora de task, então uma janela que caiba numa única hora cheia corta esse item pela metade; (2) os statements Flink são apagados no fim da janela — o pool só cobra CFU com statement rodando, e `max_cfu=10` limita o teto. |
 | ④ **Confiabilidade** | Tabela abaixo. Elo fraco: **consumidor → efeito**. |
 
